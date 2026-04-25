@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Applications - Subsitech</title>
+
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar" style="background: #00251a;">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="donor-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Portal Home
+                </a>
+                <a href="donor-create-scheme.html" class="nav-item">
+                    <i data-lucide="plus-circle"></i>
+                    Create New Scheme
+                </a>
+                <a href="donor-review-applications.html" class="nav-item active">
+                    <i data-lucide="users"></i>
+                    Review Applications
+                </a>
+                <a href="donor-impact-reports.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i>
+                    Impact Reports
+                </a>
+                <a href="donor-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Organization Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>Applicant Review Portal</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <div class="flex justify-between items-center mb-32">
+                    <div>
+                        <h2>Incoming Applications</h2>
+                        <p style="color: var(--text-secondary);">{{ review_applications|length }} total applications across your current programs.</p>
+                    </div>
+                    <form class="flex gap-16" method="get" action="{{ url_for('donor_review_applications_page') }}">
+                        <select name="program" class="form-control" style="width: auto;">
+                            <option value="">All Programs</option>
+                            <option value="Education" {% if review_filters.program == 'Education' %}selected{% endif %}>Education</option>
+                            <option value="Business" {% if review_filters.program == 'Business' %}selected{% endif %}>Business</option>
+                            <option value="Arts & Culture" {% if review_filters.program == 'Arts & Culture' %}selected{% endif %}>Arts & Culture</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" type="submit"><i data-lucide="filter" style="width: 14px; margin-right: 8px;"></i> Filters</button>
+                    </form>
+                </div>
+
+                <div class="card" style="padding: 0;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--secondary-bg);">
+                                <th style="padding: 20px;">STUDENT NAME</th>
+                                <th style="padding: 20px;">PROFILE</th>
+                                <th style="padding: 20px;">INCOME</th>
+                                <th style="padding: 20px;">MATCH SCORE</th>
+                                <th style="padding: 20px;">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in review_applications %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 20px;">
+                                    <div class="flex items-center gap-12">
+                                        <div class="avatar" style="width: 32px; height: 32px;">
+                                            <img src="https://i.pravatar.cc/100?img={{ 10 + loop.index }}" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                                        </div>
+                                        <div>
+                                            <h5 style="margin: 0;">{{ item.full_name }}</h5>
+                                            <span style="font-size: 0.75rem; color: var(--text-muted);">Applied {{ item.submitted_at }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 20px;">{{ item.gpa_text }}</td>
+                                <td style="padding: 20px;">{{ item.income_text }}</td>
+                                <td style="padding: 20px;"><span class="status-badge" style="background: var(--primary-light); color: var(--primary-color);">{{ item.match_score }}% Match</span></td>
+                                <td style="padding: 20px;">
+                                    <form method="post" action="{{ url_for('review_application', application_id=item.id) }}" style="display: flex; gap: 8px;">
+                                        <button class="btn btn-primary btn-sm" type="submit" name="decision" value="approve">Approve</button>
+                                        <button class="btn btn-outline btn-sm" type="submit" name="decision" value="reject">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="padding: 20px;">No applications match the current filter.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

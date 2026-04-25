@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Schemes - Dashboard - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .search-area {
+            background: white;
+            padding: 32px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 32px;
+        }
+        .search-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="student-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Dashboard Home
+                </a>
+                <a href="search-dashboard.html" class="nav-item active">
+                    <i data-lucide="search"></i>
+                    Explore Schemes
+                </a>
+                <a href="track-status.html" class="nav-item">
+                    <i data-lucide="file-text"></i>
+                    My Applications
+                </a>
+                <a href="account-history.html" class="nav-item">
+                    <i data-lucide="wallet"></i>
+                    Grant History
+                </a>
+                <a href="account-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>Global Opportunities</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="search-area">
+                    <form class="flex gap-20" method="get" action="{{ url_for('search_dashboard_page') }}">
+                        <div style="flex: 1; position: relative;">
+                            <i data-lucide="search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 20px;"></i>
+                            <input type="text" name="q" class="form-control" style="padding-left: 50px;" placeholder="Search for STEM grants, rural businesses, or artistic fellowships..." value="{{ filters.q }}">
+                        </div>
+                        <button class="btn btn-primary">Find Schemes</button>
+                    </form>
+                </div>
+
+                <div class="search-grid">
+                    <div class="results">
+                        <div class="flex justify-between items-center mb-24">
+                            <h4>Recommended for you</h4>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">{{ schemes|length }} matches found</span>
+                        </div>
+                        
+                        <div style="display: grid; gap: 20px;">
+                            {% for scheme in schemes %}
+                            <div class="card" style="display: flex; justify-between; align-items: center; gap: 20px;">
+                                <div style="width: 60px; height: 60px; background: var(--primary-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                                    <i data-lucide="cpu" style="width: 32px; height: 32px;"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div class="flex justify-between">
+                                        <h4>{{ scheme.title }}</h4>
+                                        <span class="status-badge status-completed" style="background: var(--primary-light); color: var(--primary-color);">{{ 74 + loop.index0 * 5 }}% Match</span>
+                                    </div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 12px;">Sponsored by {{ scheme.organization_name }} • Deadline: {{ scheme.deadline }}</p>
+                                    <div class="flex gap-20">
+                                        <span style="font-size: 0.85rem; color: var(--primary-color); font-weight: 600;">{{ scheme.budget|inr }}</span>
+                                        <a href="apply-scholarship.html?scheme_id={{ scheme.id }}" class="text-link" style="font-size: 0.85rem;">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="card">
+                                <h4>No matching schemes yet</h4>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Try a broader search or reset the filters on the right.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <aside class="filters">
+                        <div class="card">
+                            <h4 style="margin-bottom: 20px;">Filter By</h4>
+                            <form method="get" action="{{ url_for('search_dashboard_page') }}">
+                                <input type="hidden" name="q" value="{{ filters.q }}">
+                                <div class="form-group" style="margin-bottom: 24px;">
+                                    <label style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Sector</label>
+                                    <select name="category" class="form-control" style="margin-top: 8px;">
+                                        <option value="">All Sectors</option>
+                                        <option value="Education" {% if filters.category == 'Education' %}selected{% endif %}>Education</option>
+                                        <option value="Business" {% if filters.category == 'Business' %}selected{% endif %}>Business</option>
+                                        <option value="Arts & Culture" {% if filters.category == 'Arts & Culture' %}selected{% endif %}>Arts & Culture</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">Apply Filter</button>
+                            </form>
+                            <a href="{{ url_for('search_dashboard_page') }}" class="btn btn-outline" style="width: 100%;">Reset Filters</a>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

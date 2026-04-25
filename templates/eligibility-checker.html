@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eligibility Checker - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/public.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .checker-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 40px;
+        }
+        .step-indicator {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .step {
+            color: var(--text-muted);
+            font-weight: 500;
+            position: relative;
+        }
+        .step.active {
+            color: var(--primary-color);
+        }
+        .step.active::after {
+            content: '';
+            position: absolute;
+            bottom: -21px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-color);
+        }
+        .match-score-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 32px;
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+            position: sticky;
+            top: 100px;
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border: 8px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0 auto 24px;
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="services.html">Services</a>
+                <a href="about.html">About Us</a>
+                <a href="index.html#faqs">FAQs</a>
+            </div>
+            <div class="nav-actions">
+                <a href="student-dashboard.html" class="user-profile">
+                    <div class="avatar" style="width: 32px; height: 32px;">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="page-header" style="background: white; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding: 40px 0;">
+        <div class="container">
+            <div class="flex items-center gap-20">
+                <a href="index.html" style="color: var(--text-muted);"><i data-lucide="arrow-left"></i></a>
+                <h1>Eligibility Checker</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 40px 0;">
+        <div class="checker-layout">
+            <div class="card" style="padding: 40px;">
+                <div class="step-indicator">
+                    <span class="step active">01. Personal Profile</span>
+                    <span class="step">02. Financial Status</span>
+                    <span class="step">03. Academic Goals</span>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form id="checker-form" action="{{ url_for('eligibility_check') }}" method="post">
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="student_name" class="form-control" placeholder="e.g. Alex Johnson" value="{{ last_result.student_name if last_result else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Residency Status</label>
+                            <select name="residency_status" class="form-control">
+                                <option value="">Select Status</option>
+                                <option value="Citizen" {% if last_result and last_result.residency_status == 'Citizen' %}selected{% endif %}>Citizen</option>
+                                <option value="Permanent Resident" {% if last_result and last_result.residency_status == 'Permanent Resident' %}selected{% endif %}>Permanent Resident</option>
+                                <option value="International Student" {% if last_result and last_result.residency_status == 'International Student' %}selected{% endif %}>International Student</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Age Range</label>
+                            <div class="flex gap-20" style="margin-top: 8px;">
+                                <label class="form-check"><input type="radio" name="age_range" value="Under 18" {% if not last_result or last_result.age_range == 'Under 18' %}checked{% endif %}> Under 18</label>
+                                <label class="form-check"><input type="radio" name="age_range" value="18-24" {% if last_result and last_result.age_range == '18-24' %}checked{% endif %}> 18-24</label>
+                                <label class="form-check"><input type="radio" name="age_range" value="25-30" {% if last_result and last_result.age_range == '25-30' %}checked{% endif %}> 25-30</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--border-color);">
+                        <h4>Academic Interests</h4>
+                        <select name="academic_interest" class="form-control" style="margin-top: 16px; max-width: 280px;">
+                            <option value="">Select interest</option>
+                            <option value="Computer Science" {% if last_result and last_result.academic_interest == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                            <option value="Mathematics" {% if last_result and last_result.academic_interest == 'Mathematics' %}selected{% endif %}>Mathematics</option>
+                            <option value="Physics" {% if last_result and last_result.academic_interest == 'Physics' %}selected{% endif %}>Physics</option>
+                            <option value="Social Impact" {% if last_result and last_result.academic_interest == 'Social Impact' %}selected{% endif %}>Social Impact</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-between" style="margin-top: 48px;">
+                        <button type="submit" formaction="{{ url_for('save_eligibility_progress') }}" formmethod="post" class="btn btn-outline">Save for Later</button>
+                        <button type="submit" class="btn btn-primary">Calculate Match <i data-lucide="arrow-right"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <aside>
+                <div class="match-score-card">
+                    <p style="font-size: 0.9rem; margin-bottom: 24px; opacity: 0.8;">Based on your current profile</p>
+                    <div class="score-circle">{{ last_result.match_score if last_result else 72 }}%</div>
+                    <h3>Match Probability</h3>
+                    <p style="font-size: 0.85rem; margin: 16px 0 24px; opacity: 0.7;">We've found {{ 6 + ((last_result.match_score if last_result else 72) // 8) }} promising schemes that fit your criteria.</p>
+                    <a href="search.html" class="btn btn-outline" style="width: 100%; border-color: rgba(255,255,255,0.3); color: white;">View Opportunities</a>
+                </div>
+                
+                <div class="card" style="margin-top: 24px;">
+                    <h4 style="margin-bottom: 12px;">Need help?</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">If you have questions regarding your application or eligibility, contact our support team.</p>
+                    <a href="contact.html#support" class="text-link" style="margin-top: 12px; font-size: 0.85rem;">Contact Support</a>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

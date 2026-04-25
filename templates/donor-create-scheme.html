@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Scheme - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar" style="background: #00251a;">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="donor-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Portal Home
+                </a>
+                <a href="donor-create-scheme.html" class="nav-item active">
+                    <i data-lucide="plus-circle"></i>
+                    Create New Scheme
+                </a>
+                <a href="donor-review-applications.html" class="nav-item">
+                    <i data-lucide="users"></i>
+                    Review Applications
+                </a>
+                <a href="donor-impact-reports.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i>
+                    Impact Reports
+                </a>
+                <a href="donor-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Organization Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>New Program Setup</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="card" style="max-width: 800px; margin: 0 auto; padding: 40px;">
+                    <h2 style="margin-bottom: 32px;">Launch Funding Round</h2>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+                    
+                    <form action="{{ url_for('create_scheme') }}" method="post">
+                        <input type="hidden" name="scheme_status" id="scheme-status-input" value="open">
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label>Scheme Title</label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. STEM Innovation Grant 2025">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                            <div class="form-group">
+                                <label>Sector/Category</label>
+                                <select name="category" class="form-control">
+                                    <option>Education</option>
+                                    <option>Health</option>
+                                    <option>Technology</option>
+                                    <option>Environment</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Target Audience</label>
+                                <select name="target_audience" class="form-control">
+                                    <option>Undergraduates</option>
+                                    <option>Postgraduates</option>
+                                    <option>PhD Researchers</option>
+                                    <option>Startup Founders</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                            <div class="form-group">
+                                <label>Total Grant Budget (Rs)</label>
+                                <input type="number" name="budget" class="form-control" placeholder="500000">
+                            </div>
+                            <div class="form-group">
+                                <label>Application Deadline</label>
+                                <input type="date" name="deadline" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 32px;">
+                            <label>Program Description</label>
+                            <textarea name="description" class="form-control" rows="5" placeholder="Detail the objectives and requirements of this scheme..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 32px;">
+                            <label>Eligibility Criteria</label>
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <label class="form-check" style="margin-bottom: 12px; display: block;"><input type="checkbox" name="eligibility" value="GPA above 3.5 or 75 percent equivalent" checked> GPA > 3.5 / 75% equivalent</label>
+                                <label class="form-check" style="margin-bottom: 12px; display: block;"><input type="checkbox" name="eligibility" value="Annual household income below Rs 600000" checked> Annual Household Income &lt; Rs 6,00,000</label>
+                                <label class="form-check" style="display: block;"><input type="checkbox" name="eligibility" value="Residency requirements apply"> Residency Requirements</label>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-20">
+                            <button type="submit" class="btn btn-outline" style="border: none;" onclick="document.getElementById('scheme-status-input').value='draft'">Save as Draft</button>
+                            <button type="submit" class="btn btn-primary">Publish Scheme <i data-lucide="send" style="width: 16px; margin-left: 8px;"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const schemeForm = document.querySelector('form[action="{{ url_for('create_scheme') }}"]');
+        if (schemeForm) {
+            schemeForm.addEventListener('submit', (event) => {
+                const statusInput = document.getElementById('scheme-status-input');
+                if (statusInput && event.submitter && event.submitter.textContent.includes('Publish')) {
+                    statusInput.value = 'open';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

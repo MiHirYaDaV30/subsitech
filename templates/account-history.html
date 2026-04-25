@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grant History - Subsitech</title>
+
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="student-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Dashboard
+                </a>
+                <a href="track-status.html" class="nav-item">
+                    <i data-lucide="file-text"></i>
+                    My Applications
+                </a>
+                <a href="account-history.html" class="nav-item active">
+                    <i data-lucide="wallet"></i>
+                    Grant History
+                </a>
+                <a href="account-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>Grant & Payment History</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <span class="label">Total Disbursed</span>
+                        <div class="value">{{ history_summary.total_disbursed|inr }}</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Pending Disbursement</span>
+                        <div class="value">{{ history_summary.pending_disbursement|inr }}</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Next Payment</span>
+                        <div class="value">{{ history_summary.next_payment|inr }}</div>
+                    </div>
+                </div>
+
+                <div class="dash-section">
+                    <div class="section-header">
+                        <h3>Detailed Transaction Logs</h3>
+                        <form class="flex gap-20" method="get" action="{{ url_for('account_history_page') }}">
+                            <input type="date" name="date_from" value="{{ history_filters.date_from }}" class="form-control" style="padding: 4px 12px; font-size: 0.85rem;">
+                            <button class="btn btn-outline btn-sm" type="submit"><i data-lucide="filter" style="width: 14px;"></i> Filter</button>
+                            <a href="{{ url_for('export_account_history', date_from=history_filters.date_from) }}" class="btn btn-primary btn-sm">Export CSV</a>
+                        </form>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>DESCRIPTION</th>
+                                <th>SCHEME</th>
+                                <th>AMOUNT</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in history_rows %}
+                            <tr>
+                                <td>{{ item.display_date }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>#APP-{{ '%04d'|format(item.id) }}</td>
+                                <td>{{ item.budget|inr }}</td>
+                                <td><span class="status-badge {{ 'status-completed' if item.status == 'Completed' else 'status-pending' }}">{{ 'Success' if item.status == 'Completed' else item.status }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5">No transactions found for the selected filter.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

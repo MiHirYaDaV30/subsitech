@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="student-dashboard.html" class="nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    Dashboard
+                </a>
+                <a href="search-dashboard.html" class="nav-item">
+                    <i data-lucide="search"></i>
+                    Explore Schemes
+                </a>
+                <a href="track-status.html" class="nav-item">
+                    <i data-lucide="file-text"></i>
+                    My Applications
+                </a>
+                <a href="account-history.html" class="nav-item">
+                    <i data-lucide="wallet"></i>
+                    Grant History
+                </a>
+                <a href="account-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="nav-item" style="padding: 0;">
+                    <i data-lucide="log-out"></i>
+                    Log Out
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <div class="search-input-group" style="width: 400px; display: flex; align-items: center; background: #f5f5f5; padding: 8px 16px; border-radius: 8px;">
+                    <i data-lucide="search" style="width: 18px; color: #999;"></i>
+                    <input type="text" placeholder="Search applications, payments..." style="border: none; background: transparent; padding-left: 10px; width: 100%; outline: none;">
+                </div>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <h4 style="font-size: 0.9rem;">{{ current_user.full_name if current_user else 'Alex Johnson' }}</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">Student ID: #{{ current_user.id if current_user else '98221' }}</p>
+                    </div>
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                    <i data-lucide="bell" style="width: 20px; cursor: pointer;"></i>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="flex justify-between items-center mb-40" style="margin-bottom: 32px;">
+                    <div>
+                        <h2>Welcome back, {{ current_user.full_name.split()[0] if current_user else 'Alex' }}!</h2>
+                        <p style="color: var(--text-secondary);">Here's what's happening with your applications today.</p>
+                    </div>
+                    <a href="search-dashboard.html" class="btn btn-primary">Find New Schemes</a>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <span class="label">Total Grants Received</span>
+                        <div class="value">{{ student_stats.totals.received_total|inr }}</div>
+                        <div class="trend up"><i data-lucide="trending-up" style="width: 14px;"></i> Seeded from completed awards</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Pending Applications</span>
+                        <div class="value">{{ student_stats.totals.pending_count }}</div>
+                        <div class="trend" style="color: var(--warning);">{{ student_stats.totals.total_applications }} total applications</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Next Milestone</span>
+                        <div class="value">{{ student_stats.next_scheme.budget|inr if student_stats.next_scheme else 'No pending milestone' }}</div>
+                        <p style="font-size: 0.8rem; margin: 0;">{{ student_stats.next_scheme.title ~ ' - ' ~ student_stats.next_scheme.deadline if student_stats.next_scheme else 'Apply to a new scheme to see a milestone' }}</p>
+                    </div>
+                </div>
+
+                <div class="dash-section">
+                    <div class="section-header">
+                        <h3>Application & Grant History</h3>
+                        <div class="flex gap-20">
+                            <select class="form-control" style="width: auto; padding: 4px 12px; font-size: 0.85rem;">
+                                <option>Last 6 Months</option>
+                                <option>All Time</option>
+                            </select>
+                            <a href="{{ url_for('export_student_dashboard') }}" class="btn btn-outline btn-sm"><i data-lucide="download" style="width: 14px;"></i> Export</a>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SCHEME NAME</th>
+                                <th>APPLIED ON</th>
+                                <th>STATUS</th>
+                                <th>AMOUNT</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                            <tr>
+                                <td>{{ application.title }}</td>
+                                <td>{{ application.submitted_at[:10] }}</td>
+                                <td><span class="status-badge {{ 'status-completed' if application.status == 'Completed' else 'status-pending' }}">{{ application.status }}</span></td>
+                                <td>{{ application.budget|inr }}</td>
+                                <td><a href="track-status.html" class="text-link">View Details</a></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5">No applications yet. Explore schemes to get started.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="dash-section">
+                    <div class="section-header">
+                        <h3>Detailed Payment History</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TRANSACTION DATE</th>
+                                <th>DESCRIPTION</th>
+                                <th>METHOD</th>
+                                <th>AMOUNT</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications if application.status == 'Completed' %}
+                            <tr>
+                                <td>{{ application.submitted_at[:10] }}</td>
+                                <td>{{ application.title }}</td>
+                                <td>Direct Deposit</td>
+                                <td>{{ application.budget|inr }}</td>
+                                <td><span class="status-badge status-completed">Success</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5">Completed disbursements will appear here.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

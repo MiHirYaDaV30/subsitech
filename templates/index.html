@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subsitech - Turning Awareness into Opportunity</title>
+    <meta name="description" content="Discover and apply for subsidy schemes and scholarships easily. Connecting students with opportunities.">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/home.css">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="services.html">Services</a>
+                <a href="about.html">About Us</a>
+                <a href="#faqs">FAQs</a>
+            </div>
+            <div class="nav-actions">
+                {% if current_user %}
+                <a href="{{ url_for('profile_hub') }}" class="user-profile" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
+                    <div style="text-align: right;">
+                        <h4 style="font-size: 0.9rem; margin: 0;">{{ current_user.full_name }}</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">{{ 'Donor Workspace' if current_user.role == 'donor' else 'Student Dashboard' }}</p>
+                    </div>
+                    <div class="avatar" style="width: 40px; height: 40px;">
+                        <img src="https://i.pravatar.cc/100?img={{ 44 if current_user.role == 'donor' else 12 }}" alt="Profile photo" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </a>
+                {% else %}
+                <a href="login-student.html" class="btn btn-outline">Login</a>
+                <a href="signup.html" class="btn btn-primary">Join Now</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="container" style="padding-top: 24px;">
+            {% for category, message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-text">
+                    <span class="badge">Trusted Guidance & Access</span>
+                    <h1>Turning Awareness into <span class="highlight">Opportunity</span></h1>
+                    <p>Trusted financial guidance and subsidy access for every stage of your educational and business growth.</p>
+                    <div class="hero-btns">
+                        {% if current_user %}
+                        <a href="{{ url_for('profile_hub') }}" class="btn btn-primary">Open Dashboard <i data-lucide="arrow-right"></i></a>
+                        <a href="eligibility-checker.html" class="btn btn-outline">Check Eligibility</a>
+                        {% else %}
+                        <a href="signup.html" class="btn btn-primary">Get Started <i data-lucide="arrow-right"></i></a>
+                        <a href="{{ url_for('profile_hub') }}" class="btn btn-outline">Check Eligibility</a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <h3>₹35 Cr+</h3>
+                            <p>Total Subsidies Granted</p>
+                        </div>
+                        <div class="stat-item">
+                            <h3>1,280+</h3>
+                            <p>Active Scholarships</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="illustration-placeholder">
+                        <img src="https://images.unsplash.com/photo-1523240715630-67bb3c0ef0c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Students collaboration">
+                        <!-- In a real project, we'd use the SVG or specific JPG from Figma -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Our Journey to Financial Aid Starts Here</h2>
+                    <p>Simplified steps to help you find, apply and track your website with ease.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="icon-box"><i data-lucide="search"></i></div>
+                        <h3>Smart Discovery</h3>
+                        <p>AI-powered search to find the most relevant schemes for your profile.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box"><i data-lucide="users"></i></div>
+                        <h3>Direct Connection</h3>
+                        <p>Direct communication with scholarship donors and government agencies.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box"><i data-lucide="bar-chart-3"></i></div>
+                        <h3>Impact Analysis</h3>
+                        <p>Real-time tracking of your application status and financial impact.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- FAQ Section -->
+        <section class="faqs" id="faqs">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Frequently Asked Questions</h2>
+                    <p>Everything you need to know about Subsitech and how we help you find funding.</p>
+                </div>
+                
+                <div class="faq-accordion">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>How do I know if I'm eligible for a scheme?</h3>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>You can use our built-in Eligibility Checker tool! By entering your academic and financial details, our system automatically matches you with schemes you qualify for.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>Is Subsitech free for students?</h3>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Yes, searching for schemes and using our eligibility tool is completely free for all students. We are committed to making financial aid accessible to everyone.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>How do I contact a donor directly?</h3>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Once you've submitted an application, you can message donors through our secure portal to ask clarifying questions or provide additional updates.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>What documents do I need to prepare?</h3>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Commonly required documents include institutional ID, transcripts, income certificates, and personal statements. Each scheme will list its specific requirements in the application form.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container card cta-card">
+                <div class="cta-content">
+                    <h2>Ready to find your next opportunity?</h2>
+                    <p>Join thousands of students and entrepreneurs who have found their funding through Subsitech.</p>
+                    <div class="cta-btns">
+                        <a href="signup.html" class="btn btn-primary">Create Account</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="logo" style="color: white;">
+                        <i data-lucide="shield-check"></i>
+                        Subsitech
+                    </a>
+                    <p>Simplifying financial assistance for the next generation of leaders and creators.</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Platform</h4>
+                    <ul>
+                        <li><a href="services.html">How it works</a></li>
+                        <li><a href="search.html">All Schemes</a></li>
+                        <li><a href="about.html">Success Stories</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms-of-service.html">Terms of Use</a></li>
+                        <li><a href="disclaimer.html">Disclaimer</a></li>
+                        <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Subsitech. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="../static/js/common.js"></script>
+    <script src="../static/js/home.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

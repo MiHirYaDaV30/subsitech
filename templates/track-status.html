@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Application - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 60px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+        }
+        .timeline-icon {
+            position: absolute;
+            left: -54px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .timeline-item.completed .timeline-icon {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        .timeline-item.active .timeline-icon {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        .timeline-content {
+            background: var(--white);
+            padding: 24px;
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .timeline-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="student-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Dashboard
+                </a>
+                <a href="search.html" class="nav-item">
+                    <i data-lucide="search"></i>
+                    Explore Schemes
+                </a>
+                <a href="track-status.html" class="nav-item active">
+                    <i data-lucide="file-text"></i>
+                    My Applications
+                </a>
+                <a href="account-history.html" class="nav-item">
+                    <i data-lucide="wallet"></i>
+                    Grant History
+                </a>
+                <a href="account-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <div class="flex items-center gap-20">
+                    <a href="student-dashboard.html" style="color: var(--text-muted);"><i data-lucide="arrow-left"></i></a>
+                    <h3>Track Application{% if application %}: #ST-2024-{{ '%04d'|format(application.id) }}{% endif %}</h3>
+                </div>
+            </header>
+
+            <div class="dash-content" style="max-width: 800px;">
+                <div class="flex justify-between items-center mb-40">
+                    <div>
+                        <h2>{{ application.title if application else 'No application selected' }}</h2>
+                        <p style="color: var(--text-secondary);">{% if application %}Application submitted on {{ application.submitted_at[:10] }}{% else %}Apply to a scheme to see your timeline here.{% endif %}</p>
+                    </div>
+                    {% if application %}
+                    <span class="status-badge {{ 'status-completed' if application.status == 'Completed' else 'status-pending' }}">{{ application.status }}</span>
+                    {% endif %}
+                </div>
+
+                {% if application %}
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-icon"><i data-lucide="check" style="width: 16px;"></i></div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">{{ application.submitted_at }}</div>
+                            <h4>Application Submitted</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Your application was successfully received by the Subsitech portal.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item completed">
+                        <div class="timeline-icon"><i data-lucide="check" style="width: 16px;"></i></div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">Verification in progress</div>
+                            <h4>Document Verification</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Your uploaded documents have been checked for completeness.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item active">
+                        <div class="timeline-icon"><i data-lucide="clock" style="width: 16px;"></i></div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">Currently</div>
+                            <h4>Regional Board Review</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">The regional board is currently reviewing your eligibility for the grant.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i data-lucide="award" style="width: 16px;"></i></div>
+                        <div class="timeline-content" style="opacity: 0.5;">
+                            <h4>Final Selection</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Notification of your application outcome.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 40px; border: 1px solid var(--primary-light); background: #f0fdf4;">
+                    <div class="flex gap-20 items-center">
+                        <div style="background: white; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                            <i data-lucide="info"></i>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--primary-color);">Estimated Completion</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary);">A decision is expected by <strong>{{ application.deadline }}</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card">
+                    <h4>No applications yet</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Visit the schemes search page and submit your first application.</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

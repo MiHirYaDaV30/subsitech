@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impact Reports - Subsitech</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .chart-placeholder {
+            width: 100%;
+            height: 250px;
+            background: #f8fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px dashed var(--border-color);
+        }
+        .bar {
+            width: 30px;
+            background: var(--primary-color);
+            border-radius: 4px 4px 0 0;
+            margin: 0 5px;
+            align-self: flex-end;
+            transition: height 1s ease;
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" style="background: #00251a;">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="donor-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Portal Home
+                </a>
+                <a href="donor-create-scheme.html" class="nav-item">
+                    <i data-lucide="plus-circle"></i>
+                    Create New Scheme
+                </a>
+                <a href="donor-review-applications.html" class="nav-item">
+                    <i data-lucide="users"></i>
+                    Review Applications
+                </a>
+                <a href="donor-impact-reports.html" class="nav-item active">
+                    <i data-lucide="bar-chart-2"></i>
+                    Impact Reports
+                </a>
+                <a href="donor-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Organization Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>Grant Impact Analytics</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="flex justify-between items-center mb-32">
+                    <div>
+                        <h2>Social Impact Dashboard</h2>
+                        <p style="color: var(--text-secondary);">Tracking geographical and demographic reach of your current programs.</p>
+                    </div>
+                    <a href="{{ url_for('export_donor_impact_report') }}" class="btn btn-primary"><i data-lucide="download" style="width: 16px; margin-right: 8px;"></i> Export Report</a>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom: 32px;">
+                    <div class="card stat-card">
+                        <span class="label">Beneficiaries reached</span>
+                        <div class="value">1,240</div>
+                        <div class="trend up">+15% this month</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Avg Grade Improvement</span>
+                        <div class="value">0.8 GPA</div>
+                        <div class="trend">Based on 450 students</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Retention Rate</span>
+                        <div class="value">94.2%</div>
+                        <div class="trend up">High impact score</div>
+                    </div>
+                </div>
+
+                <div class="report-grid">
+                    <div class="card">
+                        <h4 style="margin-bottom: 20px;">Funding Distribution by Sector</h4>
+                        <div class="chart-placeholder">
+                            <div class="bar" style="height: 80%;"></div>
+                            <div class="bar" style="height: 40%;"></div>
+                            <div class="bar" style="height: 60%;"></div>
+                            <div class="bar" style="height: 30%;"></div>
+                            <div class="bar" style="height: 90%;"></div>
+                        </div>
+                        <div class="flex justify-around mt-16" style="margin-top: 16px; font-size: 0.75rem; color: var(--text-muted);">
+                            <span>STEM</span>
+                            <span>Arts</span>
+                            <span>Rural</span>
+                            <span>Social</span>
+                            <span>Health</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="margin-bottom: 20px;">Geographical Impact</h4>
+                        <div class="chart-placeholder">
+                            <i data-lucide="map" style="width: 100px; height: 100px; color: var(--primary-light); opacity: 0.3;"></i>
+                            <div style="position: absolute; top: 30%; left: 40%; width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%;"></div>
+                            <div style="position: absolute; top: 60%; left: 70%; width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%;"></div>
+                            <div style="position: absolute; top: 20%; left: 80%; width: 15px; height: 15px; background: var(--primary-color); border-radius: 50%;"></div>
+                        </div>
+                        <p style="margin-top: 16px; font-size: 0.85rem; color: var(--text-secondary);">Top Impact Zone: <strong>Uttar Pradesh, Central Region</strong></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

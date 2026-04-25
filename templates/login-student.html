@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/auth.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="auth-page">
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <h2>Welcome Back</h2>
+            <p>Please enter your details to sign in.</p>
+        </div>
+
+        <div class="social-btns">
+            <button class="btn-social" type="button" onclick="window.location.href='{{ url_for('social_auth', provider='google', next='student_login_page') }}'">
+                <img src="https://www.google.com/favicon.ico" width="16" alt="Google">
+                Google
+            </button>
+            <button class="btn-social" type="button" onclick="window.location.href='{{ url_for('social_auth', provider='linkedin', next='student_login_page') }}'">
+                <img src="https://www.linkedin.com/favicon.ico" width="16" alt="LinkedIn">
+                LinkedIn
+            </button>
+        </div>
+
+        <div class="divider">or sign in with email</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form id="login-form" action="{{ url_for('student_login') }}" method="post">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group" style="position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="password" style="margin-bottom: 0;">Password</label>
+                    <a href="forgot-password.html" class="text-link" style="font-size: 0.8rem;">Forgot password?</a>
+                </div>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+            </div>
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="remember">
+                    <label for="remember">Remember me for 30 days</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Sign In</button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="signup.html">Create an account</a>
+        </div>
+        <div class="auth-footer" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+            Are you a donor? <a href="login-donor.html">Donor Portal</a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

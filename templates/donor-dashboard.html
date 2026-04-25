@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Dashboard - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar" style="background: #00251a;">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="donor-dashboard.html" class="nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    Portal Home
+                </a>
+                <a href="donor-create-scheme.html" class="nav-item">
+                    <i data-lucide="plus-circle"></i>
+                    Create New Scheme
+                </a>
+                <a href="donor-review-applications.html" class="nav-item">
+                    <i data-lucide="users"></i>
+                    Review Applications
+                </a>
+                <a href="donor-impact-reports.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i>
+                    Impact Reports
+                </a>
+                <a href="donor-settings.html" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Organization Settings
+                </a>
+                <a href="search-dashboard.html" class="nav-item">
+                    <i data-lucide="search"></i>
+                    Market Research
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="nav-item" style="padding: 0;">
+                    <i data-lucide="log-out"></i>
+                    Log Out
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <div>
+                    <h3 style="color: var(--primary-color);">Welcome back, {{ current_user.organization_name if current_user and current_user.organization_name else 'your organization' }}</h3>
+                </div>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <h4 style="font-size: 0.9rem;">{{ current_user.full_name if current_user else 'Sarah Miller' }}</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">{{ current_user.account_type if current_user and current_user.account_type else 'Admin Account' }}</p>
+                    </div>
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content">
+                <div class="flex justify-between items-center mb-40">
+                    <div>
+                        <h2>Donor Overview</h2>
+                        <p style="color: var(--text-secondary);">Managing your social impact and grant distributions.</p>
+                    </div>
+                    <a href="donor-create-scheme.html" class="btn btn-primary" style="background-color: var(--accent-color);">New Funding Round</a>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <span class="label">Total Grant Budget</span>
+                        <div class="value">{{ donor_stats.summary.budget_total|inr }}</div>
+                        <div class="trend up">Across all published programs</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Active Programs</span>
+                        <div class="value">{{ donor_stats.summary.active_programs }}</div>
+                        <div class="trend">Published by your donor workspace</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="label">Applications to Review</span>
+                        <div class="value">{{ donor_stats.pending_reviews }}</div>
+                        <div class="trend down" style="color: var(--danger);">Student submissions awaiting review</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 24px;">Active Programs</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 40px;">
+                    {% for program in donor_stats.programs %}
+                    <div class="card" style="display: flex; gap: 20px; align-items: center;">
+                        <div style="width: 80px; height: 80px; background: #e0f2f1; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
+                            <i data-lucide="graduation-cap" style="width: 40px; height: 40px;"></i>
+                        </div>
+                        <div>
+                            <h4>{{ program.title }}</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Applications: {{ program.application_count }} | Allocated: {{ program.budget|inr }}</p>
+                            <div style="width: 200px; height: 6px; background: #eee; border-radius: 3px; margin: 10px 0;">
+                                <div style="width: {{ 25 + (program.application_count * 15 if program.application_count < 5 else 75) }}%; height: 100%; background: var(--primary-color); border-radius: 3px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card">
+                        <h4>No programs yet</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Create your first funding round to start collecting applications.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="dash-section">
+                    <div class="section-header">
+                        <h3>Recent Funding Disbursements</h3>
+                        <a href="donor-impact-reports.html" class="text-link">View All History</a>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>STUDENT NAME</th>
+                                <th>SCHEME</th>
+                                <th>TYPE</th>
+                                <th>AMOUNT</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in donor_stats.recent_disbursements %}
+                            <tr>
+                                <td>{{ item.first_name }} {{ item.last_name }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>Application</td>
+                                <td>{{ item.budget|inr }}</td>
+                                <td><span class="status-badge {{ 'status-completed' if item.status == 'Completed' else 'status-pending' }}">{{ 'Disbursed' if item.status == 'Completed' else item.status }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5">Recent application activity will appear here.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

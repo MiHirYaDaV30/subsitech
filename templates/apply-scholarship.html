@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Scholarship - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/public.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .application-form {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .form-stepper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        .form-stepper::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+        .step-node {
+            position: relative;
+            z-index: 2;
+            background: var(--secondary-bg);
+            text-align: center;
+            width: 50px;
+        }
+        .step-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 12px;
+            transition: var(--transition-base);
+        }
+        .step-node.active .step-circle {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 0 0 6px rgba(0, 77, 64, 0.1);
+        }
+        .step-node.completed .step-circle {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        .step-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .step-node.active .step-label {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <div class="nav-links">
+                <a href="student-dashboard.html">Dashboard</a>
+                <a href="search.html">Explore</a>
+            </div>
+            <div class="nav-actions">
+                <div class="user-profile">
+                    <div class="avatar" style="width: 32px; height: 32px;">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="padding: 60px 0;">
+        <div class="application-form">
+            <div class="flex items-center gap-20" style="margin-bottom: 40px;">
+                <a href="search.html"><i data-lucide="arrow-left"></i></a>
+                <div>
+                    <span class="badge" style="margin-bottom: 8px;">{{ scheme.category }} Sector</span>
+                    <h2>Apply for {{ scheme.title }}</h2>
+                </div>
+            </div>
+
+            <div class="form-stepper">
+                <div class="step-node active">
+                    <div class="step-circle">1</div>
+                    <span class="step-label">Personal Info</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">Academic History</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">Documents</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle">4</div>
+                    <span class="step-label">Finish</span>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 48px;">
+                <h3 style="margin-bottom: 10px;">Personal Information</h3>
+                <p style="margin-bottom: 28px; color: var(--text-secondary);">Scheme budget: {{ scheme.budget|inr }} | Deadline: {{ scheme.deadline }}</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form id="apply-form" action="{{ url_for('apply_for_scheme', scheme_id=scheme.id) }}" method="post">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ current_user.full_name.split()[0] if current_user else 'Alex' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ current_user.full_name.split()[-1] if current_user else 'Johnson' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" name="date_of_birth" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select name="gender" class="form-control">
+                                <option>Select</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px;">
+                        <div class="form-group">
+                            <label>Residential Address</label>
+                            <textarea name="address" class="form-control" rows="3" placeholder="Enter your full address..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between" style="margin-top: 48px;">
+                        <button type="submit" formaction="{{ url_for('save_application_progress', scheme_id=scheme.id) }}" formmethod="post" class="btn btn-outline">Save Progress</button>
+                        <button type="submit" class="btn btn-primary">Submit Application <i data-lucide="arrow-right"></i></button>
+                    </div>
+                </form>
+            </div>
+            
+            <div style="text-align: center; margin-top: 32px; color: var(--text-muted); font-size: 0.85rem;">
+                <p>Your data is encrypted and secure. <a href="privacy-policy.html#data-protection">Learn more about our data policy</a>.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

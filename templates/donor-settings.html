@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Settings - Subsitech</title>
+
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        .settings-nav {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-nav-item {
+            padding: 12px 0;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+        }
+        .settings-nav-item.active {
+            color: var(--primary-color);
+        }
+        .settings-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-layout">
+        <aside class="sidebar" style="background: #00251a;">
+            <div class="sidebar-logo">
+                <a href="index.html" class="logo" style="color: white;">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="donor-dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    Portal Home
+                </a>
+                <a href="donor-create-scheme.html" class="nav-item">
+                    <i data-lucide="plus-circle"></i>
+                    Create New Scheme
+                </a>
+                <a href="donor-review-applications.html" class="nav-item">
+                    <i data-lucide="users"></i>
+                    Review Applications
+                </a>
+                <a href="donor-impact-reports.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i>
+                    Impact Reports
+                </a>
+                <a href="donor-settings.html" class="nav-item active">
+                    <i data-lucide="settings"></i>
+                    Organization Settings
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="dash-header">
+                <h3>Management Settings</h3>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Avatar" style="width: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-content" style="max-width: 900px;">
+                <div class="card" style="padding: 40px;">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <div class="settings-nav">
+                        <span class="settings-nav-item active">Organization Profile</span>
+                        <span class="settings-nav-item">Team Members</span>
+                        <span class="settings-nav-item">Compliance & Tax</span>
+                        <span class="settings-nav-item">Security</span>
+                    </div>
+
+                    <div style="display: flex; gap: 40px; align-items: flex-start; margin-bottom: 40px;">
+                        <div style="width: 120px; height: 120px; background: #eee; border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <i data-lucide="building-2" style="width: 48px; height: 48px; color: var(--text-muted);"></i>
+                            <input type="file" id="donor-logo-input" accept=".jpg,.jpeg,.png" hidden>
+                            <button type="button" onclick="document.getElementById('donor-logo-input').click()" style="position: absolute; bottom: -10px; right: -10px; width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                <i data-lucide="camera" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                        <div style="flex: 1;">
+                            <h4>Foundation Identity</h4>
+                            <p id="donor-logo-text" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">This information will be visible to students applying for your programs.</p>
+                            <div class="form-group">
+                                <label>Legal Organization Name</label>
+                                <input type="text" name="organization_name" form="donor-settings-form" class="form-control" value="{{ donor_profile.organization_name }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="donor-settings-form" method="post" action="{{ url_for('update_donor_settings') }}">
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label>Mission Statement</label>
+                            <textarea name="bio" class="form-control" rows="3">{{ donor_profile.bio }}</textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+                            <div class="form-group">
+                                <label>Organization Website</label>
+                                <input type="url" name="website" class="form-control" value="{{ donor_profile.website }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Headquarters</label>
+                                <input type="text" name="headquarters" class="form-control" value="{{ donor_profile.headquarters }}">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-20">
+                            <a href="{{ url_for('donor_settings_page') }}" class="btn btn-outline" style="border: none;">Discard</a>
+                            <button type="submit" class="btn btn-primary">Save Organization Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const donorLogoInput = document.getElementById('donor-logo-input');
+        if (donorLogoInput) {
+            donorLogoInput.addEventListener('change', () => {
+                const helper = document.getElementById('donor-logo-text');
+                if (donorLogoInput.files.length && helper) {
+                    helper.textContent = `Selected logo: ${donorLogoInput.files[0].name}`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

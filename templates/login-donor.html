@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Login - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/auth.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="auth-page">
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <h2>Donor Portal</h2>
+            <p>Sign in to manage your contributions and grants.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form id="donor-login-form" action="{{ url_for('donor_login') }}" method="post">
+            <div class="form-group">
+                <label for="email">Organization Email</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="admin@foundation.org" required>
+            </div>
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="password" style="margin-bottom: 0;">Password</label>
+                    <a href="forgot-password.html" class="text-link" style="font-size: 0.8rem;">Forgot password?</a>
+                </div>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; background-color: var(--accent-color);">Sign In to Portal</button>
+        </form>
+
+        <div class="auth-footer">
+            Want to become a donor? <a href="donor-registration.html">Register here</a>
+        </div>
+        <div class="auth-footer" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+            Are you a student? <a href="login-student.html">Student Login</a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

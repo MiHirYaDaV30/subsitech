@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Registration - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/auth.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .registration-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .prog-step {
+            width: 32%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+        }
+        .prog-step.active {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body class="auth-page">
+
+    <div class="auth-container" style="max-width: 600px;">
+        <div class="registration-progress">
+            <div class="prog-step active"></div>
+            <div class="prog-step"></div>
+            <div class="prog-step"></div>
+        </div>
+
+        <div class="auth-header">
+            <a href="index.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <h2>Choose your account type</h2>
+            <p>To provide the best experience, we need to know if you're joining as an individual or an organization.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form id="donor-reg-form" action="{{ url_for('donor_register') }}" method="post">
+            <input type="hidden" id="account_type" name="account_type" value="Individual Donor">
+            <div class="account-types">
+                <div class="type-card selected" onclick="selectType(this)">
+                    <i data-lucide="user"></i>
+                    <h4>Individual Donor</h4>
+                    <p>For independent contributors, private philanthropists, or individuals.</p>
+                </div>
+                <div class="type-card" onclick="selectType(this)">
+                    <i data-lucide="building-2"></i>
+                    <h4>Corporate/Org</h4>
+                    <p>For foundations, companies, or NGOs managing multiple grants.</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Contact Person Name</label>
+                <input type="text" name="contact_name" class="form-control" placeholder="e.g. Sarah Miller" required>
+            </div>
+            <div class="form-group">
+                <label>Work Email</label>
+                <input type="email" name="email" class="form-control" placeholder="sarah@foundation.org" required>
+            </div>
+            <div class="form-group">
+                <label>Organization Name</label>
+                <input type="text" name="organization_name" class="form-control" placeholder="e.g. Global Reach Foundation">
+            </div>
+            
+            <div class="flex justify-between" style="margin-top: 32px;">
+                <a href="login-donor.html" class="btn btn-outline" style="border: none;">Back</a>
+                <button type="button" class="btn btn-primary" onclick="nextStep()">Continue <i data-lucide="arrow-right"></i></button>
+            </div>
+        </form>
+
+        <div class="auth-footer">
+            Need help with organization? <a href="contact.html#support">Contact our support</a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        function selectType(el) {
+            document.querySelectorAll('.type-card').forEach(card => card.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('account_type').value = el.querySelector('h4').textContent.trim();
+        }
+        function nextStep() {
+            document.getElementById('donor-reg-form').submit();
+        }
+    </script>
+</body>
+</html>
