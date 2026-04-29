@@ -106,52 +106,95 @@
             </header>
 
             <div class="dash-content" style="max-width: 800px;">
+                {% if all_applications|length > 0 %}
+                <div class="card" style="margin-bottom: 32px; padding: 20px;">
+                    <form method="get" action="{{ url_for('track_status_page') }}" class="flex gap-20 items-center">
+                        <label for="app-select" style="font-weight: 600; white-space: nowrap;">Select Application:</label>
+                        <div style="flex: 1;">
+                            <select id="app-select" name="id" class="form-control" onchange="this.form.submit()" style="width: 100%;">
+                                {% for app in all_applications %}
+                                <option value="{{ app.id }}" {% if application and application.id == app.id %}selected{% endif %}>
+                                    {{ app.title }} (Submitted: {{ app.submitted_at[:10] }}) - {{ app.status }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+
                 <div class="flex justify-between items-center mb-40">
                     <div>
                         <h2>{{ application.title if application else 'No application selected' }}</h2>
-                        <p style="color: var(--text-secondary);">{% if application %}Application submitted on {{ application.submitted_at[:10] }}{% else %}Apply to a scheme to see your timeline here.{% endif %}</p>
+                        <p style="color: var(--text-secondary);">{% if application %}
+                            <strong>Submitted:</strong> 
+                            <span style="font-weight: 700; color: var(--primary-color); background: var(--primary-light); padding: 4px 12px; border-radius: 6px;">
+                                {{ application.submitted_at[:10] }}
+                            </span>
+                        {% else %}Apply to a scheme to see your timeline here.{% endif %}</p>
                     </div>
                     {% if application %}
-                    <span class="status-badge {{ 'status-completed' if application.status == 'Completed' else 'status-pending' }}">{{ application.status }}</span>
+                    <span class="status-badge {{ 'status-completed' if application.status == 'Completed' else ('status-rejected' if application.status == 'Rejected' else 'status-pending') }}">{{ application.status }}</span>
                     {% endif %}
                 </div>
 
                 {% if application %}
                 <div class="timeline">
+                    <!-- Step 1: Submitted -->
                     <div class="timeline-item completed">
                         <div class="timeline-icon"><i data-lucide="check" style="width: 16px;"></i></div>
                         <div class="timeline-content">
-                            <div class="timeline-date">{{ application.submitted_at }}</div>
+                            <div class="timeline-date" style="font-weight: 700; color: var(--primary-color); background: var(--primary-light); padding: 6px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+                                {{ application.submitted_at }}
+                            </div>
                             <h4>Application Submitted</h4>
                             <p style="font-size: 0.85rem; color: var(--text-secondary);">Your application was successfully received by the Subsitech portal.</p>
                         </div>
                     </div>
                     
-                    <div class="timeline-item completed">
-                        <div class="timeline-icon"><i data-lucide="check" style="width: 16px;"></i></div>
-                        <div class="timeline-content">
-                            <div class="timeline-date">Verification in progress</div>
+                    <!-- Step 2: Document Verification -->
+                    {% set step2_status = 'completed' if application.raw_status in ['in_review', 'approved', 'completed', 'rejected'] else 'active' %}
+                    <div class="timeline-item {{ step2_status }}">
+                        <div class="timeline-icon"><i data-lucide="{{ 'check' if step2_status == 'completed' else 'clock' }}" style="width: 16px;"></i></div>
+                        <div class="timeline-content" {% if not step2_status %}style="opacity: 0.5;"{% endif %}>
+                            <div class="timeline-date">{{ 'Completed' if step2_status == 'completed' else 'Currently' }}</div>
                             <h4>Document Verification</h4>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Your uploaded documents have been checked for completeness.</p>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Your uploaded documents are checked for completeness.</p>
                         </div>
                     </div>
 
-                    <div class="timeline-item active">
-                        <div class="timeline-icon"><i data-lucide="clock" style="width: 16px;"></i></div>
-                        <div class="timeline-content">
-                            <div class="timeline-date">Currently</div>
+                    <!-- Step 3: Regional Board Review -->
+                    {% set step3_status = 'completed' if application.raw_status in ['approved', 'completed', 'rejected'] else ('active' if application.raw_status == 'in_review' else '') %}
+                    <div class="timeline-item {{ step3_status }}">
+                        <div class="timeline-icon"><i data-lucide="{{ 'check' if step3_status == 'completed' else ('clock' if step3_status == 'active' else 'search') }}" style="width: 16px;"></i></div>
+                        <div class="timeline-content" {% if not step3_status %}style="opacity: 0.5;"{% endif %}>
+                            <div class="timeline-date">{{ 'Completed' if step3_status == 'completed' else ('Currently' if step3_status == 'active' else 'Pending') }}</div>
                             <h4>Regional Board Review</h4>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary);">The regional board is currently reviewing your eligibility for the grant.</p>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">The regional board reviews your eligibility for the grant.</p>
                         </div>
                     </div>
 
-                    <div class="timeline-item">
-                        <div class="timeline-icon"><i data-lucide="award" style="width: 16px;"></i></div>
-                        <div class="timeline-content" style="opacity: 0.5;">
-                            <h4>Final Selection</h4>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Notification of your application outcome.</p>
+                    <!-- Step 4: Final Selection -->
+                    {% if application.raw_status == 'rejected' %}
+                        <div class="timeline-item active">
+                            <div class="timeline-icon" style="background: var(--error); border-color: var(--error); color: white;"><i data-lucide="x" style="width: 16px;"></i></div>
+                            <div class="timeline-content" style="border: 1px solid var(--error);">
+                                <div class="timeline-date" style="color: var(--error); font-weight: 600;">Application Rejected</div>
+                                <h4 style="color: var(--error);">Final Decision</h4>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Unfortunately, your application was not selected at this time.</p>
+                            </div>
                         </div>
-                    </div>
+                    {% else %}
+                        {% set step4_status = 'completed' if application.raw_status == 'completed' else ('active' if application.raw_status == 'approved' else '') %}
+                        <div class="timeline-item {{ step4_status }}">
+                            <div class="timeline-icon"><i data-lucide="{{ 'check' if step4_status == 'completed' else ('clock' if step4_status == 'active' else 'award') }}" style="width: 16px;"></i></div>
+                            <div class="timeline-content" {% if not step4_status %}style="opacity: 0.5;"{% endif %}>
+                                <div class="timeline-date">{{ 'Grant Disbursed' if step4_status == 'completed' else ('Pending Disbursement' if step4_status == 'active' else 'Pending') }}</div>
+                                <h4>{{ 'Grant Disbursed' if step4_status == 'completed' else 'Final Selection' }}</h4>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Notification of your application outcome and disbursement.</p>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div class="card" style="margin-top: 40px; border: 1px solid var(--primary-light); background: #f0fdf4;">

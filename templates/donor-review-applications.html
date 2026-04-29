@@ -82,9 +82,12 @@
                     <table style="width: 100%;">
                         <thead>
                             <tr style="border-bottom: 2px solid var(--secondary-bg);">
+                                <th style="padding: 20px;">APPLICATION DATE</th>
                                 <th style="padding: 20px;">STUDENT NAME</th>
-                                <th style="padding: 20px;">PROFILE</th>
+                                <th style="padding: 20px;">CGPA</th>
                                 <th style="padding: 20px;">INCOME</th>
+                                <th style="padding: 20px;">TOTAL GRANTS RECEIVED</th>
+                                <th style="padding: 20px;">DOCUMENTS</th>
                                 <th style="padding: 20px;">MATCH SCORE</th>
                                 <th style="padding: 20px;">ACTION</th>
                             </tr>
@@ -93,18 +96,33 @@
                             {% for item in review_applications %}
                             <tr style="border-bottom: 1px solid var(--border-color);">
                                 <td style="padding: 20px;">
+                                    <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem; padding: 8px 12px; background: var(--primary-light); border-radius: 6px; text-align: center;">
+                                        {{ item.submitted_at }}
+                                    </div>
+                                </td>
+                                <td style="padding: 20px;">
                                     <div class="flex items-center gap-12">
                                         <div class="avatar" style="width: 32px; height: 32px;">
                                             <img src="https://i.pravatar.cc/100?img={{ 10 + loop.index }}" alt="Avatar" style="width: 100%; border-radius: 50%;">
                                         </div>
                                         <div>
                                             <h5 style="margin: 0;">{{ item.full_name }}</h5>
-                                            <span style="font-size: 0.75rem; color: var(--text-muted);">Applied {{ item.submitted_at }}</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td style="padding: 20px;">{{ item.gpa_text }}</td>
                                 <td style="padding: 20px;">{{ item.income_text }}</td>
+                                <td style="padding: 20px;">
+                                    <span class="status-badge" style="background: var(--success-light); color: var(--success-color);">
+                                        {{ item.total_grants_text }}
+                                    </span>
+                                </td>
+                                <td style="padding: 20px;">
+                                    <a href="{{ url_for('view_application_documents', application_id=item.id) }}" class="btn btn-outline btn-sm">
+                                        <i data-lucide="file-text" style="width: 14px; margin-right: 4px;"></i>
+                                        View Docs
+                                    </a>
+                                </td>
                                 <td style="padding: 20px;"><span class="status-badge" style="background: var(--primary-light); color: var(--primary-color);">{{ item.match_score }}% Match</span></td>
                                 <td style="padding: 20px;">
                                     <form method="post" action="{{ url_for('review_application', application_id=item.id) }}" style="display: flex; gap: 8px;">
@@ -115,7 +133,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" style="padding: 20px;">No applications match the current filter.</td>
+                                <td colspan="8" style="padding: 20px;">No applications match the current filter.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

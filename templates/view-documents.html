@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Documents - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: var(--secondary-bg);">
+
+    <div class="dashboard-wrapper">
+        <nav class="navbar">
+            <div class="container nav-content">
+                <a href="index.html" class="logo">
+                    <i data-lucide="shield-check"></i>
+                    Subsitech
+                </a>
+                <div class="nav-links">
+                    <a href="{{ url_for('student_dashboard_page' if current_user.role == 'student' else 'donor_dashboard_page') }}">Dashboard</a>
+                </div>
+                <div class="nav-actions">
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Logout</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container" style="padding: 40px 0;">
+            <div class="flex items-center gap-20" style="margin-bottom: 40px;">
+                <a href="{{ url_for('student_dashboard_page' if current_user.role == 'student' else 'donor_review_applications_page') }}">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+                <div>
+                    <h2>Application Documents</h2>
+                    <p style="color: var(--text-secondary);">{{ application.scheme_title }}</p>
+                </div>
+            </div>
+
+            <!-- Document Upload Section for Students -->
+            {% if current_user.role == 'student' %}
+            <div class="card" style="margin-bottom: 40px;">
+                <h3 style="margin-bottom: 20px;">Upload Document</h3>
+                <form method="post" action="{{ url_for('upload_document') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="application_id" value="{{ application.id }}">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="form-group">
+                            <label>Document Type</label>
+                            <select name="document_type" class="form-control" required>
+                                <option value="">Select document type...</option>
+                                <option value="income_certificate">Income Certificate</option>
+                                <option value="caste_certificate">Caste Certificate</option>
+                                <option value="id_proof">ID Proof</option>
+                                <option value="address_proof">Address Proof</option>
+                                <option value="academic_records">Academic Records</option>
+                                <option value="bank_proof">Bank Account Proof</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Document File</label>
+                            <input type="file" name="document" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc" required>
+                            <small style="color: var(--text-muted);">Max 5MB. Allowed: PDF, JPG, PNG, DOCX</small>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Upload Document</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Documents List -->
+            <div class="card">
+                <h3 style="margin-bottom: 24px;">Uploaded Documents</h3>
+                
+                {% if documents %}
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                    <th style="text-align: left; padding: 12px; font-weight: 600;">Type</th>
+                                    <th style="text-align: left; padding: 12px; font-weight: 600;">Filename</th>
+                                    <th style="text-align: left; padding: 12px; font-weight: 600;">Status</th>
+                                    <th style="text-align: left; padding: 12px; font-weight: 600;">Uploaded</th>
+                                    <th style="text-align: left; padding: 12px; font-weight: 600;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents %}
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 12px;">
+                                        <span class="badge">{{ doc.document_type.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td style="padding: 12px;">{{ doc.filename }}</td>
+                                    <td style="padding: 12px;">
+                                        {% if doc.verification_status == 'verified' %}
+                                            <span style="color: #166534; background: #ecfdf3; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem;">
+                                                ✓ Verified
+                                            </span>
+                                        {% elif doc.verification_status == 'rejected' %}
+                                            <span style="color: #991b1b; background: #fef2f2; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem;">
+                                                ✗ Rejected
+                                            </span>
+                                        {% else %}
+                                            <span style="color: #9a3412; background: #fefce8; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem;">
+                                                ⧖ Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px; font-size: 0.9rem; color: var(--text-secondary);">
+                                        {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else 'N/A' }}
+                                    </td>
+                                    <td style="padding: 12px;">
+                                        <a href="{{ url_for('download_document', document_id=doc.id) }}" class="btn btn-outline btn-sm">
+                                            <i data-lucide="download" style="width: 16px; vertical-align: middle;"></i>
+                                            Download
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% if doc.rejection_reason %}
+                                <tr style="background: #fef2f2;">
+                                    <td colspan="5" style="padding: 12px; color: #991b1b;">
+                                        <strong>Rejection Reason:</strong> {{ doc.rejection_reason }}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">
+                        No documents uploaded yet.
+                        {% if current_user.role == 'student' %}
+                            Please upload required documents to complete your application.
+                        {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Document Verification Panel for Donors -->
+            {% if current_user.role == 'donor' and documents %}
+            <div class="card" style="margin-top: 40px;">
+                <h3 style="margin-bottom: 24px;">Document Verification</h3>
+                
+                {% for doc in documents %}
+                    {% if doc.verification_status == 'pending' %}
+                    <div style="background: var(--secondary-bg); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <div class="flex justify-between items-start" style="margin-bottom: 16px;">
+                            <div>
+                                <h4 style="margin: 0 0 8px 0;">{{ doc.document_type.replace('_', ' ').title() }}</h4>
+                                <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">{{ doc.filename }}</p>
+                            </div>
+                            <a href="{{ url_for('download_document', document_id=doc.id) }}" class="btn btn-outline btn-sm">
+                                <i data-lucide="external-link" style="width: 16px;"></i>
+                                Review
+                            </a>
+                        </div>
+                        
+                        <form method="post" action="{{ url_for('verify_document') }}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <input type="hidden" name="document_id" value="{{ doc.id }}">
+                            
+                            <button type="submit" name="action" value="verify" class="btn btn-success">
+                                <i data-lucide="check" style="width: 16px;"></i>
+                                Verify
+                            </button>
+                            
+                            <div>
+                                <textarea name="rejection_reason" class="form-control" placeholder="Rejection reason (if rejecting)..." style="resize: none; height: 40px;"></textarea>
+                            </div>
+                            
+                            <button type="submit" name="action" value="reject" class="btn btn-danger" style="grid-column: 2;">
+                                <i data-lucide="x" style="width: 16px;"></i>
+                                Reject
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                
+                {% set pending_docs = documents|selectattr('verification_status', 'equalto', 'pending')|list %}
+                {% if not pending_docs %}
+                    <p style="color: var(--text-secondary); text-align: center;">All documents have been verified.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

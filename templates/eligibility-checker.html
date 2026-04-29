@@ -159,10 +159,10 @@
             <aside>
                 <div class="match-score-card">
                     <p style="font-size: 0.9rem; margin-bottom: 24px; opacity: 0.8;">Based on your current profile</p>
-                    <div class="score-circle">{{ last_result.match_score if last_result else 72 }}%</div>
+                    <div class="score-circle">{{ last_result.match_score if last_result and last_result.match_score else 72 }}%</div>
                     <h3>Match Probability</h3>
-                    <p style="font-size: 0.85rem; margin: 16px 0 24px; opacity: 0.7;">We've found {{ 6 + ((last_result.match_score if last_result else 72) // 8) }} promising schemes that fit your criteria.</p>
-                    <a href="search.html" class="btn btn-outline" style="width: 100%; border-color: rgba(255,255,255,0.3); color: white;">View Opportunities</a>
+                    <p style="font-size: 0.85rem; margin: 16px 0 24px; opacity: 0.7;">We've found {% if last_result %}{{ scheme_count }}{% else %}8{% endif %} promising schemes that fit your criteria.</p>
+                    <a href="search.html{% if matched_category %}?category={{ matched_category }}{% endif %}" class="btn btn-outline" style="width: 100%; border-color: rgba(255,255,255,0.3); color: white;">View Opportunities</a>
                 </div>
                 
                 <div class="card" style="margin-top: 24px;">

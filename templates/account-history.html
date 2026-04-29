@@ -87,7 +87,11 @@
                         <tbody>
                             {% for item in history_rows %}
                             <tr>
-                                <td>{{ item.display_date }}</td>
+                                <td>
+                                    <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem; padding: 8px 12px; background: var(--primary-light); border-radius: 6px; text-align: center;">
+                                        {{ item.display_date }}
+                                    </div>
+                                </td>
                                 <td>{{ item.title }}</td>
                                 <td>#APP-{{ '%04d'|format(item.id) }}</td>
                                 <td>{{ item.budget|inr }}</td>

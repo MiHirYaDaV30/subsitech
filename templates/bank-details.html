@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Details - Subsitech</title>
+    
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/auth.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .bank-details-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .approved-apps {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+        .approved-apps h4 {
+            color: #0369a1;
+            margin-bottom: 12px;
+        }
+        .app-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        .app-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="auth-page">
+
+    <div class="auth-container bank-details-container">
+        <div class="auth-header">
+            <a href="student-dashboard.html" class="logo">
+                <i data-lucide="shield-check"></i>
+                Subsitech
+            </a>
+            <h2>Bank Account Details</h2>
+            <p>Please provide your bank details to receive scholarship disbursements.</p>
+        </div>
+
+        {% if approved_applications %}
+        <div class="approved-apps">
+            <h4><i data-lucide="check-circle" style="width: 20px; vertical-align: middle; margin-right: 8px;"></i>Approved Applications</h4>
+            {% for app in approved_applications %}
+            <div class="app-item">
+                <span>{{ app.title }}</span>
+                <span style="font-weight: 600; color: #0369a1;">{{ app.budget|inr }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; background: {{ '#ecfdf3' if category == 'success' else '#fef2f2' }}; color: {{ '#166534' if category == 'success' else '#991b1b' }}; border: 1px solid {{ '#bbf7d0' if category == 'success' else '#fecaca' }};">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('bank_details_page') }}" method="post">
+            <div class="form-group">
+                <label>Bank Name</label>
+                <input type="text" name="bank_name" class="form-control" placeholder="e.g. State Bank of India" required>
+            </div>
+            <div class="form-group">
+                <label>Account Holder Name</label>
+                <input type="text" name="account_holder_name" class="form-control" placeholder="Full name as per bank records" required>
+            </div>
+            <div class="form-group">
+                <label>Account Number</label>
+                <input type="text" name="account_number" class="form-control" placeholder="Your bank account number" required>
+            </div>
+            <div class="form-group">
+                <label>IFSC Code</label>
+                <input type="text" name="ifsc_code" class="form-control" placeholder="e.g. SBIN0001234" required>
+            </div>
+            <div class="form-group">
+                <label>Account Type</label>
+                <select name="account_type" class="form-control">
+                    <option value="savings">Savings Account</option>
+                    <option value="current">Current Account</option>
+                </select>
+            </div>
+            
+            <div class="flex justify-between" style="margin-top: 32px;">
+                <a href="student-dashboard.html" class="btn btn-outline">Back to Dashboard</a>
+                <button type="submit" class="btn btn-primary">Save Bank Details <i data-lucide="save"></i></button>
+            </div>
+        </form>
+
+        <div class="auth-footer">
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                Your bank details are encrypted and secure. We only use them for scholarship disbursements.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

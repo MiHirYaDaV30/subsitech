@@ -14,65 +14,6 @@
             max-width: 900px;
             margin: 0 auto;
         }
-        .form-stepper {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 60px;
-            position: relative;
-        }
-        .form-stepper::before {
-            content: '';
-            position: absolute;
-            top: 24px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--border-color);
-            z-index: 1;
-        }
-        .step-node {
-            position: relative;
-            z-index: 2;
-            background: var(--secondary-bg);
-            text-align: center;
-            width: 50px;
-        }
-        .step-circle {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--white);
-            border: 2px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            margin: 0 auto 12px;
-            transition: var(--transition-base);
-        }
-        .step-node.active .step-circle {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 0 0 6px rgba(0, 77, 64, 0.1);
-        }
-        .step-node.completed .step-circle {
-            background: var(--success);
-            border-color: var(--success);
-            color: white;
-        }
-        .step-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            white-space: nowrap;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .step-node.active .step-label {
-            color: var(--text-primary);
-        }
     </style>
 </head>
 <body style="background: var(--secondary-bg);">
@@ -107,28 +48,10 @@
                 </div>
             </div>
 
-            <div class="form-stepper">
-                <div class="step-node active">
-                    <div class="step-circle">1</div>
-                    <span class="step-label">Personal Info</span>
-                </div>
-                <div class="step-node">
-                    <div class="step-circle">2</div>
-                    <span class="step-label">Academic History</span>
-                </div>
-                <div class="step-node">
-                    <div class="step-circle">3</div>
-                    <span class="step-label">Documents</span>
-                </div>
-                <div class="step-node">
-                    <div class="step-circle">4</div>
-                    <span class="step-label">Finish</span>
-                </div>
-            </div>
-
             <div class="card" style="padding: 48px;">
-                <h3 style="margin-bottom: 10px;">Personal Information</h3>
-                <p style="margin-bottom: 28px; color: var(--text-secondary);">Scheme budget: {{ scheme.budget|inr }} | Deadline: {{ scheme.deadline }}</p>
+                <h3 style="margin-bottom: 10px;">Application Form</h3>
+                <p style="margin-bottom: 28px; color: var(--text-secondary);">Scheme budget: {{ scheme.budget|inr }} | Deadline: {{ scheme.deadline }}
+                {% if scheme.min_cgpa %} | Minimum CGPA: {{ scheme.min_cgpa }}{% endif %}</p>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -138,7 +61,7 @@
                 {% endif %}
                 {% endwith %}
 
-                <form id="apply-form" action="{{ url_for('apply_for_scheme', scheme_id=scheme.id) }}" method="post">
+                <form id="apply-form" action="{{ url_for('apply_for_scheme', scheme_id=scheme.id) }}" method="post" enctype="multipart/form-data">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="form-group">
                             <label>First Name</label>
@@ -161,12 +84,71 @@
                                 <option>Other</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label>Annual Family Income (Rs)</label>
+                            <input type="number" name="annual_income" class="form-control" placeholder="e.g. 250000">
+                        </div>
+                        <div class="form-group">
+                            <label>Current CGPA/Percentage</label>
+                            <input type="number" step="0.01" name="cgpa" class="form-control" placeholder="e.g. 8.5 or 85%">
+                        </div>
                     </div>
 
-                    <div style="margin-top: 32px;">
-                        <div class="form-group">
-                            <label>Residential Address</label>
-                            <textarea name="address" class="form-control" rows="3" placeholder="Enter your full address..."></textarea>
+                    <!-- Document Upload Section -->
+                    <div style="margin-top: 48px; padding: 32px; background: var(--secondary-bg); border-radius: 12px;">
+                        <h4 style="margin-bottom: 24px; color: var(--text-color);">📄 Supporting Documents</h4>
+                        <p style="margin-bottom: 24px; color: var(--text-secondary); font-size: 0.9rem;">
+                            Upload all required documents to support your application. These documents are mandatory for application submission.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <!-- Income Certificate -->
+                            <div class="form-group">
+                                <label>Income Certificate <span style="color: #dc2626;">*</span></label>
+                                <input type="file" name="income_certificate" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc" required>
+                                <small style="color: var(--text-muted);">PDF, JPG, PNG, DOCX (Max 5MB)</small>
+                            </div>
+
+                            <!-- ID Proof -->
+                            <div class="form-group">
+                                <label>ID Proof <span style="color: #dc2626;">*</span></label>
+                                <input type="file" name="id_proof" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc" required>
+                                <small style="color: var(--text-muted);">Aadhaar, PAN, or other government ID</small>
+                            </div>
+
+                            <!-- Address Proof -->
+                            <div class="form-group">
+                                <label>Address Proof <span style="color: #dc2626;">*</span></label>
+                                <input type="file" name="address_proof" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc" required>
+                                <small style="color: var(--text-muted);">Utility bill, ration card, etc.</small>
+                            </div>
+
+                            <!-- Academic Records -->
+                            <div class="form-group">
+                                <label>Academic Records <span style="color: #dc2626;">*</span></label>
+                                <input type="file" name="academic_records" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc" required>
+                                <small style="color: var(--text-muted);">Marksheets, certificates, etc.</small>
+                            </div>
+
+                            <!-- Caste Certificate (Optional) -->
+                            <div class="form-group">
+                                <label>Caste Certificate (Optional)</label>
+                                <input type="file" name="caste_certificate" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc">
+                                <small style="color: var(--text-muted);">For SC/ST/OBC candidates</small>
+                            </div>
+
+                            <!-- Bank Proof (Optional) -->
+                            <div class="form-group">
+                                <label>Bank Account Proof (Optional)</label>
+                                <input type="file" name="bank_proof" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.doc">
+                                <small style="color: var(--text-muted);">Passbook, bank statement</small>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; padding: 16px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+                            <p style="margin: 0; color: #991b1b; font-size: 0.9rem;">
+                                <strong>Important:</strong> Documents marked with <span style="color: #dc2626;">*</span> are mandatory. All documents will be verified by the donor before final approval.
+                            </p>
                         </div>
                     </div>
 

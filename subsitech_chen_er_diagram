@@ -1,0 +1,70 @@
+graph ER_Diagram {
+	overlap=false splines=true
+	node [fillcolor=lightblue fontname=Helvetica fontsize=12 shape=box style=filled]
+	Users
+	Students
+	Donors
+	Categories
+	Schemes
+	Applications
+	Documents
+	node [fillcolor=lightgreen shape=diamond style=filled]
+	HasStudentProfile
+	HasStudentProfile -- Users [label=1 fontname=Helvetica fontsize=10]
+	HasStudentProfile -- Students [label=1 fontname=Helvetica fontsize=10]
+	HasDonorProfile
+	HasDonorProfile -- Users [label=1 fontname=Helvetica fontsize=10]
+	HasDonorProfile -- Donors [label=1 fontname=Helvetica fontsize=10]
+	Creates
+	Creates -- Donors [label=1 fontname=Helvetica fontsize=10]
+	Creates -- Schemes [label=N fontname=Helvetica fontsize=10]
+	Categorizes
+	Categorizes -- Categories [label=1 fontname=Helvetica fontsize=10]
+	Categorizes -- Schemes [label=N fontname=Helvetica fontsize=10]
+	Submits
+	Submits -- Students [label=1 fontname=Helvetica fontsize=10]
+	Submits -- Applications [label=N fontname=Helvetica fontsize=10]
+	Receives
+	Receives -- Schemes [label=1 fontname=Helvetica fontsize=10]
+	Receives -- Applications [label=N fontname=Helvetica fontsize=10]
+	Requires
+	Requires -- Applications [label=1 fontname=Helvetica fontsize=10]
+	Requires -- Documents [label=N fontname=Helvetica fontsize=10]
+	node [fillcolor=lightyellow height=0.3 shape=ellipse style=filled width=0.7]
+	attr_0 [label=<<U>id</U>>]
+	Users -- attr_0
+	attr_1 [label=email]
+	Users -- attr_1
+	attr_2 [label=role]
+	Users -- attr_2
+	attr_3 [label=<<U>id</U>>]
+	Students -- attr_3
+	attr_4 [label=full_name]
+	Students -- attr_4
+	attr_5 [label=cgpa]
+	Students -- attr_5
+	attr_6 [label=<<U>id</U>>]
+	Donors -- attr_6
+	attr_7 [label=organization_name]
+	Donors -- attr_7
+	attr_8 [label=<<U>id</U>>]
+	Categories -- attr_8
+	attr_9 [label=name]
+	Categories -- attr_9
+	attr_10 [label=<<U>id</U>>]
+	Schemes -- attr_10
+	attr_11 [label=title]
+	Schemes -- attr_11
+	attr_12 [label=budget]
+	Schemes -- attr_12
+	attr_13 [label=<<U>id</U>>]
+	Applications -- attr_13
+	attr_14 [label=status]
+	Applications -- attr_14
+	attr_15 [label=<<U>id</U>>]
+	Documents -- attr_15
+	attr_16 [label=document_type]
+	Documents -- attr_16
+	attr_17 [label=verification_status]
+	Documents -- attr_17
+}

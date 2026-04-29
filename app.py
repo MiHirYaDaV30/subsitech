@@ -7,9 +7,12 @@ from datetime import date, timedelta
 from decimal import Decimal
 from functools import wraps
 from typing import Any
+from pathlib import Path
+import secrets
 
-from flask import Flask, Response, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, Response, flash, g, redirect, render_template, request, session, url_for, send_file
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 try:
     import mysql.connector
@@ -17,6 +20,17 @@ try:
 except ImportError:  # pragma: no cover - handled at runtime
     mysql = None
     MySQLError = Exception
+
+try:
+    from PIL import Image
+    import pdfkit
+    from docx import Document
+    import PyPDF2
+except ImportError:
+    Image = None
+    pdfkit = None
+    Document = None
+    PyPDF2 = None
 
 
 PAGE_TEMPLATES = {
@@ -39,7 +53,6 @@ PAGE_TEMPLATES = {
     "login-donor.html",
     "login-student.html",
     "privacy-policy.html",
-    "search-dashboard.html",
     "search.html",
     "services.html",
     "signup.html",
@@ -56,8 +69,18 @@ DB_CONFIG = {
     "database": os.environ.get("MYSQL_DATABASE", "subsitech"),
 }
 
+# Document upload configuration
+UPLOADS_FOLDER = Path(__file__).parent / "uploads" / "documents"
+ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "docx", "doc"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB per file
+MAX_REQUEST_SIZE = 50 * 1024 * 1024  # 50MB total request size (for multiple files)
+
+# Create uploads folder if it doesn't exist
+UPLOADS_FOLDER.mkdir(parents=True, exist_ok=True)
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "subsitech-dev-secret")
+app.config["MAX_CONTENT_LENGTH"] = MAX_REQUEST_SIZE
 
 
 def get_db():
@@ -233,7 +256,7 @@ def query_schemes(limit: int | None = None, filters: dict[str, str] | None = Non
             c.name AS category,
             s.target_audience,
             s.budget,
-            DATE_FORMAT(s.deadline, '%%Y-%%m-%%d') AS deadline,
+            DATE_FORMAT(s.deadline, '%Y-%m-%d') AS deadline,
             s.description,
             s.eligibility,
             d.organization_name
@@ -259,9 +282,10 @@ def get_student_applications(user_id: int) -> list[dict[str, Any]]:
         """
         SELECT
             a.id,
+            a.scheme_id,
             a.status AS raw_status,
-            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%%Y-%%m-%%d %%H:%%i:%%s') AS submitted_at,
-            DATE_FORMAT(s.deadline, '%%Y-%%m-%%d') AS deadline,
+            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%Y-%m-%d %H:%i:%S') AS submitted_at,
+            DATE_FORMAT(s.deadline, '%Y-%m-%d') AS deadline,
             s.title,
             s.budget
         FROM applications a
@@ -272,8 +296,26 @@ def get_student_applications(user_id: int) -> list[dict[str, Any]]:
         (student["id"],),
     )
     for row in rows:
-        row["status"] = format_status(row.pop("raw_status", None))
+        row["status"] = format_status(row.get("raw_status"))
     return rows
+
+
+def get_user_notifications(user_id: int, limit: int = 10) -> list[dict[str, Any]]:
+    return fetch_all(
+        """
+        SELECT
+            id,
+            title,
+            message,
+            is_read,
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%S') AS created_at
+        FROM notifications
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT %s
+        """,
+        (user_id, limit),
+    )
 
 
 def get_student_stats(user_id: int) -> dict[str, Any]:
@@ -300,7 +342,7 @@ def get_student_stats(user_id: int) -> dict[str, Any]:
         SELECT
             s.title,
             s.budget,
-            DATE_FORMAT(s.deadline, '%%Y-%%m-%%d') AS deadline
+            DATE_FORMAT(s.deadline, '%Y-%m-%d') AS deadline
         FROM applications a
         JOIN schemes s ON s.id = a.scheme_id
         WHERE a.student_id = %s
@@ -418,8 +460,8 @@ def get_account_history_rows(user_id: int, date_from: str = "") -> list[dict[str
         SELECT
             a.id,
             a.status AS raw_status,
-            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%%b %%d, %%Y') AS display_date,
-            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%%Y-%%m-%%d') AS sort_date,
+            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%b %d, %Y') AS display_date,
+            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%Y-%m-%d') AS sort_date,
             s.title,
             s.budget
         FROM applications a
@@ -439,7 +481,7 @@ def get_donor_review_applications(user_id: int, category_filter: str = "") -> li
     if donor is None:
         return []
 
-    conditions = ["s.donor_id = %s", "a.status IN ('submitted', 'in_review', 'approved', 'rejected', 'completed')"]
+    conditions = ["s.donor_id = %s", "a.status IN ('submitted', 'in_review')"]
     params: list[Any] = [donor["id"]]
     if category_filter:
         conditions.append("c.name = %s")
@@ -453,9 +495,16 @@ def get_donor_review_applications(user_id: int, category_filter: str = "") -> li
             st.full_name,
             st.annual_income,
             st.education_level,
-            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%%Y-%%m-%%d') AS submitted_at,
+            st.cgpa,
+            DATE_FORMAT(COALESCE(a.submitted_at, a.created_at), '%Y-%m-%d') AS submitted_at,
             s.title,
-            c.name AS category
+            c.name AS category,
+            COALESCE((
+                SELECT SUM(s2.budget)
+                FROM applications a2
+                JOIN schemes s2 ON s2.id = a2.scheme_id
+                WHERE a2.student_id = st.id AND a2.status IN ('approved', 'completed')
+            ), 0) AS total_grants_received
         FROM applications a
         JOIN schemes s ON s.id = a.scheme_id
         JOIN categories c ON c.id = s.category_id
@@ -467,10 +516,14 @@ def get_donor_review_applications(user_id: int, category_filter: str = "") -> li
     )
     for index, row in enumerate(rows):
         income = Decimal(row.get("annual_income") or 0)
+        total_grants = Decimal(row.get("total_grants_received") or 0)
+        cgpa = row.get("cgpa")
+        
         row["status"] = format_status(row.pop("raw_status", None))
         row["match_score"] = min(99, max(72, 96 - (index * 4)))
-        row["gpa_text"] = row.get("education_level") or "Student Profile"
+        row["gpa_text"] = f"CGPA: {cgpa}" if cgpa else "CGPA: Not specified"
         row["income_text"] = format_inr(income)
+        row["total_grants_text"] = format_inr(total_grants)
     return rows
 
 
@@ -742,16 +795,16 @@ def donor_login_page() -> str:
 @login_required("student")
 def student_dashboard_page() -> str:
     user = current_user()
+    student = get_student_profile(user["id"])
     apps = get_student_applications(user["id"])
-    return render_template("student-dashboard.html", applications=apps)
-
-
-@app.route("/search-dashboard.html")
-@login_required("student")
-def search_dashboard_page() -> str:
-    filters = {"q": request.args.get("q", "").strip(), "category": request.args.get("category", "").strip()}
-    schemes = query_schemes(filters=filters)
-    return render_template("search-dashboard.html", schemes=schemes, filters=filters)
+    
+    # Get recommended schemes, excluding ones the student has already applied to
+    all_schemes = query_schemes(limit=10)  # Get more to filter
+    applied_scheme_ids = {app["scheme_id"] for app in apps}
+    recommended_schemes = [scheme for scheme in all_schemes if scheme["id"] not in applied_scheme_ids][:3]
+    
+    notifications = get_user_notifications(user["id"])
+    return render_template("student-dashboard.html", applications=apps, recommended_schemes=recommended_schemes, notifications=notifications)
 
 
 @app.route("/track-status.html")
@@ -759,8 +812,14 @@ def search_dashboard_page() -> str:
 def track_status_page() -> str:
     user = current_user()
     applications = get_student_applications(user["id"])
-    latest_application = applications[0] if applications else None
-    return render_template("track-status.html", application=latest_application)
+    
+    app_id = request.args.get("id", type=int)
+    if app_id:
+        latest_application = next((app for app in applications if app["id"] == app_id), None)
+    else:
+        latest_application = applications[0] if applications else None
+        
+    return render_template("track-status.html", application=latest_application, all_applications=applications)
 
 
 @app.route("/account-history.html")
@@ -802,6 +861,14 @@ def account_settings_page() -> str:
         "education_level": student.get("education_level") or "",
         "annual_income": student.get("annual_income") or "",
         "address": student.get("address") or "",
+        "city": student.get("city") or "",
+        "state": student.get("state") or "",
+        "country": student.get("country") or "",
+        "bank_name": student.get("bank_name") or "",
+        "account_holder_name": student.get("account_holder_name") or "",
+        "account_number": student.get("account_number") or "",
+        "ifsc_code": student.get("ifsc_code") or "",
+        "account_type": student.get("account_type") or "savings",
     }
     return render_template("account-settings.html", profile=profile)
 
@@ -843,20 +910,55 @@ def donor_create_scheme_page() -> str:
 
 
 @app.route("/search.html")
+@login_required("student")
 def search_page() -> str:
+    user = current_user()
+    student = get_student_profile(user["id"]) if user else None
+    
     filters = {"q": request.args.get("q", "").strip(), "category": request.args.get("category", "").strip()}
     schemes = query_schemes(filters=filters)
+    
+    # Check which schemes the student has already applied to
+    applied_scheme_ids = set()
+    if student:
+        applied_applications = fetch_all(
+            "SELECT scheme_id FROM applications WHERE student_id = %s",
+            (student["id"],)
+        )
+        applied_scheme_ids = {app["scheme_id"] for app in applied_applications}
+    
+    # Mark schemes as applied
+    for scheme in schemes:
+        scheme["already_applied"] = scheme["id"] in applied_scheme_ids
+    
     return render_template("search.html", schemes=schemes, filters=filters)
 
 
 @app.route("/apply-scholarship.html")
 @login_required("student")
 def apply_scholarship_page() -> str:
+    user = current_user()
+    student = get_student_profile(user["id"])
+    if student is None:
+        flash("Your student profile is incomplete.", "error")
+        return redirect(url_for("student_dashboard_page"))
+    
     scheme_id = request.args.get("scheme_id", type=int)
     scheme = None
     if scheme_id:
         matching = query_schemes(filters={})
         scheme = next((row for row in matching if row["id"] == scheme_id), None)
+        
+        # Check if student has already applied to this scheme
+        if scheme:
+            existing = fetch_one(
+                "SELECT id FROM applications WHERE scheme_id = %s AND student_id = %s",
+                (scheme_id, student["id"]),
+            )
+            if existing:
+                flash("You have already applied for this scheme.", "error")
+                return redirect(url_for("track_status_page"))
+    
     if scheme is None:
         fallback = query_schemes(limit=1)
         scheme = fallback[0] if fallback else None
@@ -882,13 +984,33 @@ def eligibility_checker_page() -> str:
                 age_range,
                 academic_interest,
                 match_score,
-                DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H:%%i:%%s') AS created_at
+                DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%S') AS created_at
             FROM eligibility_checks
             WHERE id = %s
             """,
             (check_id,),
         )
-    return render_template("eligibility-checker.html", last_result=last_result)
+        
+    if not last_result and "eligibility_draft" in session:
+        last_result = session["eligibility_draft"]
+        
+    scheme_count = 0
+    matched_category = ""
+    if last_result and last_result.get("academic_interest"):
+        interest = last_result["academic_interest"]
+        if interest in ["Computer Science", "Mathematics", "Physics"]:
+            matched_category = "Education"
+        elif interest == "Social Impact":
+            matched_category = "Arts & Culture"
+        else:
+            matched_category = "Business"
+            
+        category_row = fetch_one("SELECT id FROM categories WHERE name = %s", (matched_category,))
+        if category_row:
+            count_row = fetch_one("SELECT COUNT(*) as cnt FROM schemes WHERE category_id = %s AND status = 'open'", (category_row["id"],))
+            scheme_count = count_row["cnt"] if count_row else 0
+
+    return render_template("eligibility-checker.html", last_result=last_result, scheme_count=scheme_count, matched_category=matched_category)
 
 
 @app.route("/logout")
@@ -951,6 +1073,7 @@ def update_account_settings() -> Any:
         flash("Your student profile could not be found.", "error")
         return redirect(url_for("account_settings_page"))
 
+    # Get form data - only update fields that were actually submitted
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
     phone = request.form.get("phone", "").strip()
@@ -959,54 +1082,119 @@ def update_account_settings() -> Any:
     education_level = request.form.get("education_level", "").strip()
     annual_income = request.form.get("annual_income", "").strip()
     address = request.form.get("address", "").strip()
+    city = request.form.get("city", "").strip()
+    state = request.form.get("state", "").strip()
+    country = request.form.get("country", "").strip()
+    bank_name = request.form.get("bank_name", "").strip()
+    account_holder_name = request.form.get("account_holder_name", "").strip()
+    account_number = request.form.get("account_number", "").strip()
+    ifsc_code = request.form.get("ifsc_code", "").strip()
+    account_type = request.form.get("account_type", "").strip()
 
-    if not first_name:
-        flash("First name is required.", "error")
-        return redirect(url_for("account_settings_page"))
+    # Build dynamic update query - only update fields that were submitted
+    update_fields = []
+    update_values = []
 
-    full_name = f"{first_name} {last_name}".strip()
-    income_value = None
+    # Profile fields
+    if first_name or last_name:
+        full_name = f"{first_name} {last_name}".strip()
+        update_fields.append("full_name = %s")
+        update_values.append(full_name)
+
+    if phone:
+        update_fields.append("phone = %s")
+        update_values.append(phone)
+
+    if bio:
+        update_fields.append("bio = %s")
+        update_values.append(bio)
+
+    if institution_name:
+        update_fields.append("institution_name = %s")
+        update_values.append(institution_name)
+
+    if education_level:
+        update_fields.append("education_level = %s")
+        update_values.append(education_level)
+
     if annual_income:
         try:
             income_value = float(annual_income)
+            update_fields.append("annual_income = %s")
+            update_values.append(income_value)
         except ValueError:
             flash("Annual income must be a valid number.", "error")
             return redirect(url_for("account_settings_page"))
 
+    if address:
+        update_fields.append("address = %s")
+        update_values.append(address)
+
+    if city:
+        update_fields.append("city = %s")
+        update_values.append(city)
+
+    if state:
+        update_fields.append("state = %s")
+        update_values.append(state)
+
+    if country:
+        update_fields.append("country = %s")
+        update_values.append(country)
+
+    # Bank fields
+    if bank_name:
+        update_fields.append("bank_name = %s")
+        update_values.append(bank_name)
+
+    if account_holder_name:
+        update_fields.append("account_holder_name = %s")
+        update_values.append(account_holder_name)
+
+    if account_number:
+        update_fields.append("account_number = %s")
+        update_values.append(account_number)
+
+    if ifsc_code:
+        update_fields.append("ifsc_code = %s")
+        update_values.append(ifsc_code)
+
+    if account_type:
+        update_fields.append("account_type = %s")
+        update_values.append(account_type)
+
+    # Only validate first_name if profile fields are being submitted
+    if first_name or phone or bio or institution_name or education_level or annual_income or address or city or state or country:
+        if not first_name and not student.get("full_name"):
+            flash("First name is required.", "error")
+            return redirect(url_for("account_settings_page"))
+
+    # If no fields to update, just redirect
+    if not update_fields:
+        flash("No changes to save.", "info")
+        return redirect(url_for("account_settings_page"))
+
     connection = get_db()
     cursor = connection.cursor()
     try:
-        cursor.execute(
-            """
+        # Build the dynamic UPDATE query
+        update_query = f"""
             UPDATE students
-            SET full_name = %s,
-                phone = %s,
-                bio = %s,
-                institution_name = %s,
-                education_level = %s,
-                annual_income = %s,
-                address = %s
+            SET {', '.join(update_fields)}
             WHERE user_id = %s
-            """,
-            (
-                full_name,
-                phone or None,
-                bio or None,
-                institution_name or None,
-                education_level or None,
-                income_value,
-                address or None,
-                user["id"],
-            ),
-        )
+        """
+        update_values.append(user["id"])
+
+        cursor.execute(update_query, update_values)
         connection.commit()
-    except Exception:
+
+        flash("Account settings updated successfully.", "success")
+    except Exception as e:
         connection.rollback()
-        raise
+        flash(f"Error updating account settings: {str(e)}", "error")
     finally:
         cursor.close()
 
-    flash("Account settings updated successfully.", "success")
     return redirect(url_for("account_settings_page"))
 
 
@@ -1058,6 +1246,110 @@ def update_donor_settings() -> Any:
 
     flash("Organization settings saved.", "success")
     return redirect(url_for("donor_settings_page"))
+
+
+@app.route("/bank-details", methods=["GET", "POST"])
+@login_required("student")
+def bank_details_page() -> Any:
+    user = current_user()
+    student = get_student_profile(user["id"])
+    if student is None:
+        flash("Your student profile could not be found.", "error")
+        return redirect(url_for("student_dashboard_page"))
+
+    if request.method == "POST":
+        bank_name = request.form.get("bank_name", "").strip()
+        account_holder_name = request.form.get("account_holder_name", "").strip()
+        account_number = request.form.get("account_number", "").strip()
+        ifsc_code = request.form.get("ifsc_code", "").strip()
+        account_type = request.form.get("account_type", "savings").strip()
+
+        if not all([bank_name, account_holder_name, account_number, ifsc_code]):
+            flash("Please fill in all bank details.", "error")
+            return redirect(url_for("bank_details_page"))
+
+        connection = get_db()
+        try:
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT a.id, s.title FROM applications a JOIN schemes s ON a.scheme_id = s.id WHERE a.student_id = %s AND a.status = 'approved'",
+                (student["id"],)
+            )
+            approved_apps_to_notify = cursor.fetchall()
+            cursor.close()
+
+            cursor = connection.cursor()
+            cursor.execute(
+                """
+                UPDATE students
+                SET bank_name = %s,
+                    account_holder_name = %s,
+                    account_number = %s,
+                    ifsc_code = %s,
+                    account_type = %s
+                WHERE id = %s
+                """,
+                (bank_name, account_holder_name, account_number, ifsc_code, account_type, student["id"]),
+            )
+            
+            # Update approved applications to 'completed' status when bank details are provided
+            cursor.execute(
+                """
+                UPDATE applications 
+                SET status = 'completed', completed_at = NOW() 
+                WHERE student_id = %s AND status = 'approved'
+                """,
+                (student["id"],)
+            )
+            
+            # Send notifications for the grants disbursed
+            for app_info in approved_apps_to_notify:
+                cursor.execute(
+                    """
+                    INSERT INTO notifications (user_id, title, message, is_read)
+                    VALUES (%s, %s, %s, 0)
+                    """,
+                    (
+                        user["id"],
+                        "Grant Disbursed!",
+                        f"Great news! The grant money for '{app_info['title']}' has been successfully disbursed to your account.",
+                    )
+                )
+            
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            cursor.close()
+
+        flash("Bank details saved successfully. Your approved applications have been marked as completed and we'll process disbursements soon.", "success")
+        return redirect(url_for("student_dashboard_page"))
+
+    # Check if student has approved applications that need bank details
+    approved_apps = fetch_all(
+        """
+        SELECT a.id, s.title, s.budget
+        FROM applications a
+        JOIN schemes s ON a.scheme_id = s.id
+        WHERE a.student_id = %s AND a.status = 'approved'
+        AND (SELECT COUNT(*) FROM students st WHERE st.id = a.student_id AND st.account_number IS NOT NULL) = 0
+        """,
+        (student["id"],)
+    )
+
+    return render_template("bank-details.html", approved_applications=approved_apps)
+
+
+@app.route("/mark-notification-read/<int:notification_id>", methods=["POST"])
+@login_required()
+def mark_notification_read(notification_id: int) -> Any:
+    user = current_user()
+    execute_write(
+        "UPDATE notifications SET is_read = 1 WHERE id = %s AND user_id = %s",
+        (notification_id, user["id"])
+    )
+    return {"success": True}
 
 
 @app.route("/signup", methods=["POST"])
@@ -1144,10 +1436,11 @@ def donor_register() -> Any:
     account_type = request.form.get("account_type", "Individual Donor").strip()
     full_name = request.form.get("contact_name", "").strip()
     email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "").strip()
     organization_name = request.form.get("organization_name", "").strip() or full_name
 
-    if not full_name or not email:
-        flash("Please fill in your contact name and email.", "error")
+    if not full_name or not email or not password:
+        flash("Please fill in your contact name, email, and password.", "error")
         return redirect(url_for("donor_registration_page"))
 
     if fetch_one("SELECT id FROM users WHERE email = %s", (email,)):
@@ -1162,7 +1455,7 @@ def donor_register() -> Any:
             INSERT INTO users (email, password_hash, role, is_active)
             VALUES (%s, %s, 'donor', 1)
             """,
-            (email, generate_password_hash("donor123")),
+            (email, generate_password_hash(password)),
         )
         user_id = cursor.lastrowid
         cursor.execute(
@@ -1181,7 +1474,7 @@ def donor_register() -> Any:
 
     session.clear()
     session["user_id"] = user_id
-    flash("Donor profile created. A starter password of donor123 has been assigned for this demo.", "success")
+    flash("Donor profile created successfully.", "success")
     return redirect(url_for("donor_dashboard_page"))
 
 
@@ -1192,8 +1485,10 @@ def create_scheme() -> Any:
     category = request.form.get("category", "").strip()
     target_audience = request.form.get("target_audience", "").strip()
     budget = request.form.get("budget", type=int)
+    total_slots = request.form.get("total_slots", type=int, default=25)
     deadline = request.form.get("deadline", "").strip()
     description = request.form.get("description", "").strip()
+    min_cgpa = request.form.get("min_cgpa", type=float)
     eligibility_items = request.form.getlist("eligibility")
     scheme_status = request.form.get("scheme_status", "open").strip()
     if scheme_status not in {"open", "draft"}:
@@ -1215,8 +1510,8 @@ def create_scheme() -> Any:
         cursor.execute(
             """
             INSERT INTO schemes
-            (donor_id, category_id, title, target_audience, budget, deadline, description, eligibility, benefits, total_slots, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (donor_id, category_id, title, target_audience, budget, deadline, description, eligibility, benefits, total_slots, status, min_cgpa)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 donor["id"],
@@ -1228,8 +1523,9 @@ def create_scheme() -> Any:
                 description,
                 ", ".join(eligibility_items),
                 "Published from donor workspace",
-                25,
+                total_slots,
                 scheme_status,
+                min_cgpa,
             ),
         )
         cursor.execute(
@@ -1277,40 +1573,114 @@ def apply_for_scheme(scheme_id: int) -> Any:
     last_name = request.form.get("last_name", "").strip()
     dob = request.form.get("date_of_birth", "").strip()
     gender = request.form.get("gender", "").strip()
-    address = request.form.get("address", "").strip()
+    annual_income = request.form.get("annual_income", "").strip()
+    cgpa = request.form.get("cgpa", "").strip()
 
-    if not first_name or not last_name or not address:
+    # Get scheme details for eligibility check
+    scheme = fetch_one("SELECT min_cgpa FROM schemes WHERE id = %s", (scheme_id,))
+    if scheme and scheme["min_cgpa"] and cgpa:
+        if float(cgpa) < scheme["min_cgpa"]:
+            flash(f"Your CGPA ({cgpa}) does not meet the minimum requirement of {scheme['min_cgpa']} for this scheme.", "error")
+            return redirect(url_for("apply_scholarship_page", scheme_id=scheme_id))
+
+    if not first_name or not last_name:
         flash("Please complete the personal information section.", "error")
         return redirect(url_for("apply_scholarship_page", scheme_id=scheme_id))
 
     full_name = f"{first_name} {last_name}".strip()
     connection = get_db()
     cursor = connection.cursor()
+    documents_uploaded = False
+    
     try:
-        cursor.execute(
-            """
-            UPDATE students
-            SET full_name = %s,
-                date_of_birth = NULLIF(%s, ''),
-                gender = %s,
-                address = %s
-            WHERE id = %s
-            """,
-            (full_name, dob, gender, address, student["id"]),
-        )
+        # Create application (DO NOT update student profile)
         cursor.execute(
             """
             INSERT INTO applications
-            (scheme_id, student_id, status, statement_of_purpose)
-            VALUES (%s, %s, 'submitted', %s)
+            (scheme_id, student_id, status, statement_of_purpose, documents_uploaded)
+            VALUES (%s, %s, 'submitted', %s, %s)
             """,
             (
                 scheme_id,
                 student["id"],
                 f"{full_name} applied through the scholarship form on Subsitech.",
+                documents_uploaded,
             ),
         )
         application_id = cursor.lastrowid
+
+        # Process uploaded documents
+        document_types = {
+            'income_certificate': 'Income Certificate',
+            'id_proof': 'ID Proof',
+            'address_proof': 'Address Proof',
+            'academic_records': 'Academic Records',
+            'caste_certificate': 'Caste Certificate',
+            'bank_proof': 'Bank Account Proof'
+        }
+
+        # Check for mandatory documents
+        mandatory_docs = ['income_certificate', 'id_proof', 'address_proof', 'academic_records']
+        missing_mandatory = []
+        
+        for field_name in mandatory_docs:
+            if field_name not in request.files or not request.files[field_name].filename:
+                missing_mandatory.append(document_types[field_name])
+
+        if missing_mandatory:
+            flash(f"Please upload all mandatory documents: {', '.join(missing_mandatory)}", "error")
+            return redirect(url_for("apply_scholarship_page", scheme_id=scheme_id))
+
+        for field_name, doc_type in document_types.items():
+            if field_name in request.files:
+                file = request.files[field_name]
+                if file and file.filename and allowed_file(file.filename):
+                    # Generate secure filename for original file
+                    original_ext = file.filename.rsplit(".", 1)[1].lower()
+                    temp_name = f"{application_id}_{secrets.token_hex(8)}_temp.{original_ext}"
+                    temp_filepath = UPLOADS_FOLDER / temp_name
+                    
+                    # Save original file temporarily
+                    file.save(temp_filepath)
+                    
+                    try:
+                        # Convert to standard format (PDF or JPG)
+                        final_ext = 'pdf' if original_ext in ['pdf', 'docx'] else 'jpg'
+                        final_name = f"{application_id}_{secrets.token_hex(8)}.{final_ext}"
+                        final_filepath = UPLOADS_FOLDER / final_name
+                        
+                        # Convert the document
+                        converted_format = convert_to_standard_format(temp_filepath, final_filepath)
+                        
+                        # Get file size of converted file
+                        file_size = final_filepath.stat().st_size
+                        
+                        if file_size <= MAX_FILE_SIZE:
+                            # Store in database with converted file info
+                            cursor.execute(
+                                """INSERT INTO documents (application_id, document_type, filename, filepath, file_size, verification_status)
+                                   VALUES (%s, %s, %s, %s, %s, 'pending')""",
+                                (application_id, doc_type, f"{file.filename.rsplit('.', 1)[0]}.{final_ext}", str(final_filepath), file_size)
+                            )
+                            documents_uploaded = True
+                        else:
+                            flash(f"Converted file for {doc_type} is too large (max {MAX_FILE_SIZE//(1024*1024)}MB).", "error")
+                            
+                    except Exception as e:
+                        flash(f"Failed to process {doc_type}: {str(e)}", "error")
+                    finally:
+                        # Clean up temporary file
+                        if temp_filepath.exists():
+                            temp_filepath.unlink()
+
+        # Update documents_uploaded flag if any documents were uploaded
+        if documents_uploaded:
+            cursor.execute(
+                "UPDATE applications SET documents_uploaded = TRUE WHERE id = %s",
+                (application_id,)
+            )
+
+        # Create notification
         cursor.execute(
             """
             INSERT INTO notifications (user_id, title, message, is_read)
@@ -1319,9 +1689,11 @@ def apply_for_scheme(scheme_id: int) -> Any:
             (
                 user["id"],
                 "Application Submitted",
-                "Your scholarship application has been submitted and is now under review.",
+                f"Your scholarship application has been submitted with documents and is now under review.",
             ),
         )
+
+        # Log activity
         cursor.execute(
             """
             INSERT INTO activity_logs (user_id, activity_type, entity_type, entity_id, details)
@@ -1332,17 +1704,19 @@ def apply_for_scheme(scheme_id: int) -> Any:
                 "application_submitted",
                 "application",
                 application_id,
-                f"Submitted application for scheme #{scheme_id}.",
+                f"Submitted application for scheme #{scheme_id} with documents.",
             ),
         )
+
         connection.commit()
-    except Exception:
+    except Exception as e:
         connection.rollback()
-        raise
+        flash(f"Error submitting application: {str(e)}", "error")
+        return redirect(url_for("apply_scholarship_page", scheme_id=scheme_id))
     finally:
         cursor.close()
 
-    flash("Application submitted. Nice work.", "success")
+    flash("Application submitted successfully! Documents uploaded and pending verification.", "success")
     return redirect(url_for("track_status_page"))
 
 
@@ -1420,9 +1794,47 @@ def review_application(application_id: int) -> Any:
     new_status = status_map.get(decision, "approved")
 
     connection = get_db()
-    cursor = connection.cursor()
+    cursor = connection.cursor(dictionary=True)
     try:
+        # Get application details for notification
+        cursor.execute("""
+            SELECT u.id AS user_id, s.title, u.email as student_email
+            FROM applications a
+            JOIN schemes s ON a.scheme_id = s.id
+            JOIN students st ON a.student_id = st.id
+            JOIN users u ON st.user_id = u.id
+            WHERE a.id = %s
+        """, (application_id,))
+        app_details = cursor.fetchone()
+        
         cursor.execute("UPDATE applications SET status = %s, reviewed_at = NOW() WHERE id = %s", (new_status, application_id))
+        
+        # Send notification to student if approved or completed
+        if new_status == "approved" and app_details:
+            cursor.execute(
+                """
+                INSERT INTO notifications (user_id, title, message, is_read)
+                VALUES (%s, %s, %s, 0)
+                """,
+                (
+                    app_details["user_id"],
+                    "Application Approved!",
+                    f"Congratulations! Your application for '{app_details['title']}' has been approved. You will be contacted for disbursement details.",
+                ),
+            )
+        elif new_status == "completed" and app_details:
+            cursor.execute(
+                """
+                INSERT INTO notifications (user_id, title, message, is_read)
+                VALUES (%s, %s, %s, 0)
+                """,
+                (
+                    app_details["user_id"],
+                    "Grant Disbursed!",
+                    f"Great news! The grant money for '{app_details['title']}' has been successfully disbursed to your account.",
+                ),
+            )
+        
         connection.commit()
     except Exception:
         connection.rollback()
@@ -1446,6 +1858,311 @@ def export_donor_impact_report() -> Response:
     for item in donor_stats["recent_disbursements"]:
         data.append([f"Recent - {item['first_name']} {item['last_name']}".strip(), item["title"], item["budget"], item["status"]])
     return make_csv_response("donor-impact-report.csv", ["Metric", "Value", "Amount", "Status"], data)
+
+
+def convert_to_standard_format(file_path: Path, output_path: Path) -> str:
+    """Convert document to PDF or JPG format"""
+    if not Image or not pdfkit or not Document or not PyPDF2:
+        # Fallback: just copy the file if conversion libraries are not available
+        import shutil
+        shutil.copy2(file_path, output_path)
+        return file_path.suffix.lower().lstrip('.')
+
+    file_ext = file_path.suffix.lower()
+
+    try:
+        if file_ext in ['.pdf']:
+            # PDF files are already in standard format, just copy
+            import shutil
+            shutil.copy2(file_path, output_path)
+            return 'pdf'
+
+        elif file_ext in ['.jpg', '.jpeg', '.png']:
+            # Convert images to JPG
+            if Image:
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary (for PNG with transparency)
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        img = img.convert('RGB')
+                    img.save(output_path, 'JPEG', quality=85)
+                return 'jpg'
+            else:
+                # Fallback: copy as-is
+                import shutil
+                shutil.copy2(file_path, output_path)
+                return file_ext.lstrip('.')
+
+        elif file_ext in ['.docx']:
+            # Convert DOCX to PDF
+            if pdfkit:
+                pdfkit.from_file(str(file_path), str(output_path))
+                return 'pdf'
+            else:
+                # Fallback: copy as-is
+                import shutil
+                shutil.copy2(file_path, output_path)
+                return 'docx'
+
+        elif file_ext in ['.doc']:
+            # For DOC files, we'll need to handle them differently
+            # For now, let's raise an error as DOC conversion is complex
+            raise ValueError("DOC files are not supported. Please convert to DOCX or PDF.")
+
+        else:
+            raise ValueError(f"Unsupported file format: {file_ext}")
+
+    except Exception as e:
+        # If conversion fails, copy the original file
+        import shutil
+        shutil.copy2(file_path, output_path)
+        return file_ext.lstrip('.')
+
+
+def allowed_file(filename: str) -> bool:
+    """Check if file extension is allowed"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route("/upload-document", methods=["POST"])
+@login_required("student")
+def upload_document() -> Any:
+    """Upload a document for scholarship application"""
+    user = current_user()
+    if not user or user["role"] != "student":
+        flash("Only students can upload documents.", "error")
+        return redirect(url_for("student_login_page"))
+    
+    application_id = request.form.get("application_id")
+    document_type = request.form.get("document_type", "").strip()
+    
+    if not application_id or not document_type:
+        flash("Missing application ID or document type.", "error")
+        return redirect(url_for("account_settings_page"))
+    
+    # Verify application belongs to this student
+    application = fetch_one(
+        "SELECT a.id FROM applications a WHERE a.id = %s AND a.student_id = (SELECT id FROM students WHERE user_id = %s)",
+        (application_id, user["id"])
+    )
+    
+    if not application:
+        flash("Application not found.", "error")
+        return redirect(url_for("student_dashboard_page"))
+    
+    if "document" not in request.files:
+        flash("No file provided.", "error")
+        return redirect(url_for("account_settings_page"))
+    
+    file = request.files["document"]
+    if file.filename == "":
+        flash("No file selected.", "error")
+        return redirect(url_for("account_settings_page"))
+    
+    if not allowed_file(file.filename):
+        flash("File type not allowed. Use: PDF, JPG, PNG, DOCX", "error")
+        return redirect(url_for("account_settings_page"))
+    
+    try:
+        # Generate secure filename for original file
+        original_ext = file.filename.rsplit(".", 1)[1].lower()
+        temp_name = f"{application_id}_{secrets.token_hex(8)}_temp.{original_ext}"
+        temp_filepath = UPLOADS_FOLDER / temp_name
+        
+        # Save original file temporarily
+        file.save(temp_filepath)
+        
+        try:
+            # Convert to standard format (PDF or JPG)
+            final_ext = 'pdf' if original_ext in ['pdf', 'docx'] else 'jpg'
+            final_name = f"{application_id}_{secrets.token_hex(8)}.{final_ext}"
+            final_filepath = UPLOADS_FOLDER / final_name
+            
+            # Convert the document
+            converted_format = convert_to_standard_format(temp_filepath, final_filepath)
+            
+            # Get file size of converted file
+            file_size = final_filepath.stat().st_size
+            
+            if file_size > MAX_FILE_SIZE:
+                final_filepath.unlink()
+                flash("Converted file size exceeds 5MB limit.", "error")
+                return redirect(url_for("account_settings_page"))
+            
+            # Store in database with converted file info
+            execute_write(
+                """INSERT INTO documents (application_id, document_type, filename, filepath, file_size, verification_status)
+                   VALUES (%s, %s, %s, %s, %s, 'pending')""",
+                (application_id, document_type, f"{file.filename.rsplit('.', 1)[0]}.{final_ext}", str(final_filepath), file_size)
+            )
+            
+            # Mark application as having documents
+            execute_write(
+                "UPDATE applications SET documents_uploaded = TRUE WHERE id = %s",
+                (application_id,)
+            )
+            
+        except Exception as e:
+            flash(f"Failed to process document: {str(e)}", "error")
+            return redirect(url_for("account_settings_page"))
+        finally:
+            # Clean up temporary file
+            if temp_filepath.exists():
+                temp_filepath.unlink()
+        
+        flash("Document uploaded successfully! It's pending verification.", "success")
+        return redirect(url_for("account_settings_page"))
+        
+    except Exception as e:
+        flash(f"Error uploading document: {str(e)}", "error")
+        return redirect(url_for("account_settings_page"))
+
+
+@app.route("/verify-document", methods=["POST"])
+@login_required("donor")
+def verify_document() -> Any:
+    """Verify or reject a document (donor only)"""
+    user = current_user()
+    if not user or user["role"] != "donor":
+        flash("Only donors can verify documents.", "error")
+        return redirect(url_for("donor_login_page"))
+    
+    document_id = request.form.get("document_id")
+    action = request.form.get("action")  # 'verify' or 'reject'
+    rejection_reason = request.form.get("rejection_reason", "").strip()
+    
+    if not document_id or action not in ("verify", "reject"):
+        flash("Invalid request.", "error")
+        return redirect(url_for("donor_review_applications_page"))
+    
+    # Get document
+    document = fetch_one(
+        """SELECT d.* FROM documents d
+           JOIN applications a ON d.application_id = a.id
+           JOIN schemes s ON a.scheme_id = s.id
+           WHERE d.id = %s AND s.donor_id = (SELECT id FROM donors WHERE user_id = %s)""",
+        (document_id, user["id"])
+    )
+    
+    if not document:
+        flash("Document not found or not authorized.", "error")
+        return redirect(url_for("donor_review_applications_page"))
+    
+    status = "verified" if action == "verify" else "rejected"
+    
+    # Update document
+    execute_write(
+        """UPDATE documents 
+           SET verification_status = %s, verified_by = (SELECT id FROM donors WHERE user_id = %s), 
+               verified_at = NOW(), rejection_reason = %s
+           WHERE id = %s""",
+        (status, user["id"], rejection_reason if action == "reject" else None, document_id)
+    )
+    
+    flash(f"Document {status} successfully!", "success")
+    return redirect(url_for("donor_review_applications_page"))
+
+
+@app.route("/application-documents/<int:application_id>", methods=["GET"])
+@login_required()
+def view_application_documents(application_id: int) -> Any:
+    """View documents for an application"""
+    user = current_user()
+    if not user:
+        return redirect(url_for("student_login_page"))
+    
+    # Get application
+    application = fetch_one(
+        """SELECT a.*, s.title as scheme_title, st.full_name as student_name
+           FROM applications a
+           JOIN schemes s ON a.scheme_id = s.id
+           JOIN students st ON a.student_id = st.id
+           WHERE a.id = %s""",
+        (application_id,)
+    )
+    
+    if not application:
+        flash("Application not found.", "error")
+        return redirect(url_for("student_dashboard_page"))
+    
+    # Check authorization
+    if user["role"] == "student":
+        student = get_student_profile(user["id"])
+        if application["student_id"] != student["id"]:
+            flash("Not authorized to view this application.", "error")
+            return redirect(url_for("student_dashboard_page"))
+    elif user["role"] == "donor":
+        donor = get_donor_profile(user["id"])
+        scheme = fetch_one("SELECT donor_id FROM schemes WHERE id = %s", (application["scheme_id"],))
+        if scheme["donor_id"] != donor["id"]:
+            flash("Not authorized to view this application.", "error")
+            return redirect(url_for("donor_review_applications_page"))
+    
+    # Get documents
+    documents = fetch_all(
+        """SELECT d.*, u.email as verified_by_email
+           FROM documents d
+           LEFT JOIN users u ON d.verified_by = u.id
+           WHERE d.application_id = %s
+           ORDER BY d.uploaded_at DESC""",
+        (application_id,)
+    )
+    
+    return render_template(
+        "view-documents.html",
+        application=application,
+        documents=documents
+    )
+
+
+@app.route("/download-document/<int:document_id>", methods=["GET"])
+@login_required()
+def download_document(document_id: int) -> Any:
+    """Download a document"""
+    user = current_user()
+    if not user:
+        return redirect(url_for("student_login_page"))
+    
+    # Get document
+    document = fetch_one(
+        """SELECT d.* FROM documents d
+           JOIN applications a ON d.application_id = a.id
+           WHERE d.id = %s""",
+        (document_id,)
+    )
+    
+    if not document:
+        flash("Document not found.", "error")
+        return redirect(url_for("student_dashboard_page"))
+    
+    # Check authorization
+    if user["role"] == "student":
+        student = get_student_profile(user["id"])
+        if document["application_id"] != student.get("id"):
+            # Check if they own the application
+            app_check = fetch_one(
+                "SELECT student_id FROM applications WHERE id = %s",
+                (document["application_id"],)
+            )
+            if app_check["student_id"] != student["id"]:
+                flash("Not authorized to download this document.", "error")
+                return redirect(url_for("student_dashboard_page"))
+    elif user["role"] == "donor":
+        donor = get_donor_profile(user["id"])
+        app = fetch_one(
+            "SELECT a.scheme_id FROM applications a WHERE a.id = %s",
+            (document["application_id"],)
+        )
+        scheme = fetch_one("SELECT donor_id FROM schemes WHERE id = %s", (app["scheme_id"],))
+        if scheme["donor_id"] != donor["id"]:
+            flash("Not authorized to download this document.", "error")
+            return redirect(url_for("donor_review_applications_page"))
+    
+    filepath = Path(document["filepath"])
+    if not filepath.exists():
+        flash("File not found.", "error")
+        return redirect(url_for("student_dashboard_page"))
+    
+    return send_file(filepath, as_attachment=True, download_name=document["filename"])
 
 
 @app.route("/<path:page_name>")
