@@ -1,148 +1,111 @@
-````md
 # 🎓 SubsiTech
 
-> **Bridging the gap between financial assistance providers and deserving students through a transparent and intelligent subsidy platform.**
-
-![Python](https://img.shields.io/badge/Python-3.9+-blue?style=flat-square&logo=python)
-![Flask](https://img.shields.io/badge/Backend-Flask-black?style=flat-square&logo=flask)
-![MySQL](https://img.shields.io/badge/Database-MySQL-orange?style=flat-square&logo=mysql)
-![HTML](https://img.shields.io/badge/Frontend-HTML5-E34F26?style=flat-square&logo=html5)
-![CSS](https://img.shields.io/badge/Styling-CSS3-1572B6?style=flat-square&logo=css3)
-![JavaScript](https://img.shields.io/badge/Frontend-JavaScript-yellow?style=flat-square&logo=javascript)
+A centralized financial assistance platform connecting students, founders, donors, and organizations through a transparent and structured subsidy ecosystem.
 
 ---
 
-# 📖 Project Overview
+## 👥 Team Details
 
-**SubsiTech** is a centralized financial assistance platform built using **Python (Flask)** and **MySQL** that connects **Students / Founders** with **Donors / Organizations** offering scholarships, grants, and subsidies.
+### Team Members
 
-The platform simplifies the discovery, eligibility checking, application, and management of educational and financial support programs through a transparent and structured ecosystem.
-
-Many financially disadvantaged students in India struggle to access available scholarships and subsidies due to:
-
-- Lack of awareness
-- Scattered information
-- Complex eligibility criteria
-- Lengthy application processes
-
-Additionally, donors and organizations willing to support education often lack a transparent and reliable platform to connect with genuine beneficiaries, resulting in underutilized funds and missed opportunities for students.
-
-SubsiTech bridges this gap by creating a reliable digital platform for both seekers and providers.
+| Name |
+|---|
+| Mihir Yadav |
+| Sakshi Yelpale |
+| Yugandhar Kasar |
+| Shravani Patil |
 
 ---
 
-# ✨ Core Features
+## 📖 Overview
 
-## 👨‍🎓 For Students / Seekers
+SubsiTech is a web-based platform developed using Flask and MySQL that helps students and aspiring founders discover and apply for scholarships, grants, and subsidy programs in one place.
 
-### 🔍 Discovery Portal
-- Browse active scholarships, grants, and subsidies
-- Explore categories such as:
-  - Education
-  - Business / Startups
-  - Arts & Culture
+Many deserving students and innovators struggle to access financial support because information is scattered, eligibility criteria are unclear, and application procedures are complicated. At the same time, organizations and donors often lack a reliable platform to reach genuine beneficiaries.
 
-### 📝 Application System
-- Check eligibility criteria before applying
-- Submit Statements of Purpose (SOPs)
-- Upload required documents securely
-
-### 📊 Dashboard
-Track application progress in real time:
-- Draft
-- Submitted
-- In Review
-- Approved
-- Rejected
-
-### 👤 Profile Management
-Maintain:
-- Academic details
-- Income information
-- Institutional information
-- Personal verification details
+SubsiTech solves this problem by providing a unified platform where seekers can apply for opportunities while organizations can manage and review applications efficiently.
 
 ---
 
-## 🏢 For Donors / Organizations
+## ✨ Key Features
 
-### 💰 Scheme Management
-Create and publish funding programs with:
-- Budget allocation
-- Deadlines
-- Eligibility rules
-- Funding categories
+### 👨‍🎓 Student Portal
 
-Examples:
-- STEM Excellence Grant
-- Startup Seed Subsidy
-
-### 📋 Review Portal
-- Review incoming applications
-- Analyze automated match scores
-- Filter candidates based on:
-  - GPA
-  - Financial background
-  - Eligibility criteria
-
-### 📈 Impact Tracking
-- Monitor active programs
-- Track fund disbursement
-- Manage organization profiles
+| Feature | Description |
+|---|---|
+| Scholarship Discovery | Browse scholarships, grants, and subsidy programs |
+| Eligibility Check | Verify eligibility before applying |
+| Application System | Submit SOPs and upload required documents |
+| Application Tracking | Track application status in real time |
+| Profile Management | Manage academic, income, and personal details |
 
 ---
 
-# 🏗️ System Architecture
+### 🏢 Donor & Organization Portal
 
-SubsiTech follows a monolithic web application architecture centered around Flask and MySQL.
-
-## Architecture Components
-
-### Frontend Layer
-- HTML5
-- CSS3
-- JavaScript
-- Jinja2 Templating Engine
-
-### Backend Layer
-- Python Flask Framework
-- REST-like route handling
-- Business logic processing
-- File upload management
-
-### Database Layer
-- MySQL Database
-- Raw SQL queries using `mysql-connector-python`
-
-### Document Processing
-Supports handling:
-- PDFs
-- Images
-- Word Documents
-
-Libraries used:
-- PyPDF2
-- pdfkit
-- python-docx
-- Pillow
+| Feature | Description |
+|---|---|
+| Scheme Management | Create and manage funding programs |
+| Application Review | Review and filter applications |
+| Candidate Analysis | Analyze applicants based on eligibility |
+| Impact Tracking | Monitor active schemes and fund distribution |
 
 ---
 
-# 🛠️ Tech Stack
+## 🏗️ System Architecture
 
-| Component | Technology |
-|-----------|-------------|
+SubsiTech follows a monolithic web application architecture built around Flask and MySQL.
+
+### Architecture Layers
+
+| Layer | Technologies Used |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript |
 | Backend | Flask (Python) |
 | Database | MySQL |
-| Frontend | HTML, CSS, JavaScript |
-| Templating | Jinja2 |
-| Database Connector | mysql-connector-python |
+| Template Engine | Jinja2 |
 | Document Processing | PyPDF2, pdfkit, python-docx |
 | Image Handling | Pillow |
 
 ---
 
-# 📂 Project Structure
+## 🛠️ Tech Stack
+
+| Category | Technology |
+|---|---|
+| Backend Framework | Flask |
+| Programming Language | Python |
+| Database | MySQL |
+| Frontend | HTML, CSS, JavaScript |
+| Template Engine | Jinja2 |
+| Database Connector | mysql-connector-python |
+| Document Handling | PyPDF2, pdfkit, python-docx |
+| Image Processing | Pillow |
+
+---
+
+## 📦 Requirements
+
+Install the following dependencies before running the project:
+
+```txt
+Flask
+mysql-connector-python
+PyPDF2
+pdfkit
+python-docx
+Pillow
+```
+
+Install all dependencies using:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 📂 Project Structure
 
 ```bash
 SubsiTech/
@@ -153,9 +116,9 @@ SubsiTech/
 │   └── uploads/
 │
 ├── templates/
+│   ├── auth/
 │   ├── student/
-│   ├── donor/
-│   └── auth/
+│   └── donor/
 │
 ├── database/
 │   └── schema.sql
@@ -168,21 +131,9 @@ SubsiTech/
 
 ---
 
-# 🚀 Getting Started
+# 🚀 Setup & Installation
 
-## 📋 Prerequisites
-
-Before running the project, make sure you have:
-
-- Python 3.9+
-- MySQL Server
-- Git
-
----
-
-# ⚙️ Installation
-
-## 1️⃣ Clone the Repository
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/MiHirYaDaV30/subsitech.git
@@ -191,27 +142,29 @@ cd subsitech
 
 ---
 
-## 2️⃣ Create Virtual Environment
+## 2. Create Virtual Environment
 
 ```bash
 python -m venv venv
 ```
 
-Activate virtual environment:
+### Activate Virtual Environment
 
-### Windows
+#### Windows
+
 ```bash
 venv\Scripts\activate
 ```
 
-### Linux / Mac
+#### Linux / macOS
+
 ```bash
 source venv/bin/activate
 ```
 
 ---
 
-## 3️⃣ Install Dependencies
+## 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -219,7 +172,7 @@ pip install -r requirements.txt
 
 ---
 
-## 4️⃣ Configure Database
+## 4. Configure Database
 
 Create a MySQL database:
 
@@ -227,7 +180,7 @@ Create a MySQL database:
 CREATE DATABASE subsitech;
 ```
 
-Update database credentials inside:
+Update your database credentials inside:
 
 ```bash
 config.py
@@ -235,7 +188,7 @@ config.py
 
 ---
 
-## 5️⃣ Run the Application
+## 5. Run the Application
 
 ```bash
 python app.py
@@ -249,28 +202,18 @@ http://127.0.0.1:5000
 
 ---
 
-# 📌 Future Enhancements
+## 📌 Future Enhancements
 
-- 🤖 AI-based scholarship recommendation system
-- 🌐 Multilingual support
-- 📱 Mobile application
-- 🔐 Aadhaar / institutional verification
-- 📊 Analytics dashboard
-- 📨 Smart notification system
-- ☁️ Cloud deployment support
-
----
-
-# 👥 Project Team
-
-- Mihir Yadav
-- Sakshi Yelpale
-- Yugandhar Kasar
-- Shravani Patil
+- AI-based scholarship recommendation system
+- Multilingual platform support
+- Mobile application support
+- Aadhaar verification integration
+- Analytics dashboard
+- Smart notification system
+- Cloud deployment support
 
 ---
 
-# Vision
+## 🎯 Vision
 
 SubsiTech aims to ensure that financial limitations never become a barrier to education, innovation, and opportunity.
-````
